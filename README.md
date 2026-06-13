@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Torres del Paine Summit 2026 — Productora Calafate
 
-## Getting Started
+Sitio web para el evento exclusivo en la Patagonia chilena. Landing page editorial con formulario de inscripcion real, diseno bilingue ES/EN.
 
-First, run the development server:
+## Stack
+
+Next.js 16 (App Router) · React 19 · Tailwind CSS v4 · Framer Motion v12 · Zustand v5 · TypeScript strict · pnpm
+
+## Quick start
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
+pnpm dev        # http://localhost:3000
+pnpm build      # build de produccion
+pnpm lint       # ESLint
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Estructura
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+src/
+├── app/            # layout + page + globals.css
+├── components/     # 17 componentes (5 secciones + navbar/footer + onboarding)
+├── lib/            # mock-data, onboarding-text (i18n)
+├── store/          # Zustand (onboarding, invitation)
+└── types/          # Interfaces TypeScript
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Documentacion
 
-## Learn More
+Documentacion completa en [`docs/`](./docs/):
 
-To learn more about Next.js, take a look at the following resources:
+| Documento | Contenido |
+|---|---|
+| [docs/architecture.md](./docs/architecture.md) | Stack, estructura, arbol de componentes, data flow |
+| [docs/components.md](./docs/components.md) | Catalogo de 17 componentes |
+| [docs/onboarding.md](./docs/onboarding.md) | Flujo de registro (4 pasos, store, dieta, pagos) |
+| [docs/design.md](./docs/design.md) | Sistema de diseno (tokens, tipografia, paleta glaciar) |
+| [docs/i18n.md](./docs/i18n.md) | Sistema bilingue ES/EN |
+| [docs/development.md](./docs/development.md) | Setup, convenciones, plan Supabase |
+| [docs/deployment.md](./docs/deployment.md) | Deploy en Vercel |
+| [docs/CHANGELOG.md](./docs/CHANGELOG.md) | Historial de cambios |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Estado
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Build: compila sin errores (0 TS errors, 0 warnings)
+- Video hero: Pexels placeholder (Patagonia drone, 1080p)
+- Onboarding: formulario completo con submit simulado
+- i18n: ~280 claves ES/EN
+- Supabase: pendiente de integracion
+- Imagenes: placeholders pendientes de reemplazo
