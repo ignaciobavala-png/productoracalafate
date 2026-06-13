@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { logoutAction } from './login/actions'
+import { logoutAction } from '../login/actions'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   // Re-validación de auth en el servidor (no confiar solo en el proxy)

@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import type { GuestOnboardingData, CompanionData } from "@/types";
 import type { Language } from "@/lib/onboarding-text";
+import { createClient } from "@/lib/supabase/client";
+import { uploadFile } from "@/lib/supabase/storage";
 
 interface OnboardingState {
   step: number;
@@ -117,9 +119,86 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
     }),
 
   submit: async () => {
+    const { data } = useOnboardingStore.getState();
     set({ isSubmitting: true });
-    await new Promise((r) => setTimeout(r, 2000));
-    set({ isSubmitting: false, isSubmitted: true });
+
+    try {
+      const supabase = createClient();
+
+      // Insertar guest primero para obtener el ID generado
+      const { data: guest, error: guestError } = await supabase
+        .from("guests")
+        .insert({
+          full_name: data.fullName!,
+          nationality: data.nationality || null,
+          date_of_birth: data.dateOfBirth || null,
+          email: data.email!,
+          phone: data.phone || null,
+          wants_whatsapp: data.wantsWhatsApp ?? false,
+          is_coming_alone: data.isComingAlone,
+          dietary_restrictions: data.dietaryRestrictions ?? [],
+          dietary_details: data.dietaryDetails ?? "",
+          bio: data.bio ?? "",
+          needs_invoice: data.needsInvoice ?? false,
+          payment_method_id: data.paymentMethod || null,
+          accepted_terms: data.acceptedTerms ?? false,
+        })
+        .select("id")
+        .single();
+
+      if (guestError) throw guestError;
+      const guestId = guest.id;
+
+      // Subir fotos en paralelo
+      const uploads: Promise<void>[] = [];
+
+      if (data.idPhoto) {
+        const ext = data.idPhoto.name.split(".").pop() ?? "jpg";
+        uploads.push(
+          uploadFile("guest-id-photos", `${guestId}/id.${ext}`, data.idPhoto)
+            .then((path) =>
+              supabase.from("guests").update({ id_photo_url: path }).eq("id", guestId)
+            )
+            .then(() => undefined)
+        );
+      }
+
+      if (data.profilePhoto) {
+        const ext = data.profilePhoto.name.split(".").pop() ?? "jpg";
+        uploads.push(
+          uploadFile("guest-profile-photos", `${guestId}/profile.${ext}`, data.profilePhoto)
+            .then((path) =>
+              supabase.from("guests").update({ profile_photo_url: path }).eq("id", guestId)
+            )
+            .then(() => undefined)
+        );
+      }
+
+      // Insertar acompañante si corresponde
+      if (data.isComingAlone === false && data.companion?.fullName) {
+        uploads.push(
+          supabase
+            .from("companions")
+            .insert({
+              guest_id: guestId,
+              full_name: data.companion.fullName,
+              nationality: data.companion.nationality || null,
+              date_of_birth: data.companion.dateOfBirth || null,
+              email: data.companion.email || null,
+              phone: data.companion.phone || null,
+              wants_whatsapp: data.companion.wantsWhatsApp ?? false,
+            })
+            .then(() => undefined) as Promise<void>
+        );
+      }
+
+      await Promise.all(uploads);
+      set({ isSubmitting: false, isSubmitted: true });
+    } catch (err) {
+      console.error("[onboarding] submit error:", err);
+      set({ isSubmitting: false });
+      throw err;
+    }
   },
 
   reset: () =>
