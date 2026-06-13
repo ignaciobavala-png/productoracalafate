@@ -47,6 +47,7 @@ export interface GuestOnboardingData {
   dietaryDetails: string;
   idPhoto: File | null;
   profilePhoto: File | null;
+  paymentProof: File | null;
   bio: string;
   needsInvoice: boolean;
   paymentMethod: string;

@@ -31,19 +31,30 @@ export default async function GuestDetailPage({ params }: Props) {
   // Signed URLs para fotos privadas (1 hora)
   let idPhotoUrl: string | null = null
   let profilePhotoUrl: string | null = null
+  let paymentProofUrl: string | null = null
+
+  const signedUrlFetches: Promise<void>[] = []
 
   if (guest.id_photo_url) {
-    const { data } = await supabase.storage
-      .from('guest-id-photos')
-      .createSignedUrl(guest.id_photo_url, 3600)
-    idPhotoUrl = data?.signedUrl ?? null
+    signedUrlFetches.push(
+      supabase.storage.from('guest-id-photos').createSignedUrl(guest.id_photo_url, 3600)
+        .then(({ data }) => { idPhotoUrl = data?.signedUrl ?? null })
+    )
   }
   if (guest.profile_photo_url) {
-    const { data } = await supabase.storage
-      .from('guest-profile-photos')
-      .createSignedUrl(guest.profile_photo_url, 3600)
-    profilePhotoUrl = data?.signedUrl ?? null
+    signedUrlFetches.push(
+      supabase.storage.from('guest-profile-photos').createSignedUrl(guest.profile_photo_url, 3600)
+        .then(({ data }) => { profilePhotoUrl = data?.signedUrl ?? null })
+    )
   }
+  if (guest.payment_proof_url) {
+    signedUrlFetches.push(
+      supabase.storage.from('guest-payment-proofs').createSignedUrl(guest.payment_proof_url, 3600)
+        .then(({ data }) => { paymentProofUrl = data?.signedUrl ?? null })
+    )
+  }
+
+  await Promise.all(signedUrlFetches)
 
   const confirmAction = updateGuestStatus.bind(null, id, 'confirmed')
   const pendingAction = updateGuestStatus.bind(null, id, 'pending')
@@ -128,10 +139,10 @@ export default async function GuestDetailPage({ params }: Props) {
           )}
         </Section>
 
-        {/* Fotos */}
+        {/* Fotos e identidad */}
         {(idPhotoUrl || profilePhotoUrl) && (
           <Section title="Fotos">
-            <div className="grid grid-cols-2 gap-4 py-3">
+            <div className="grid grid-cols-2 gap-4 p-4">
               {idPhotoUrl && (
                 <div>
                   <p className="text-xs text-white/40 mb-2">Documento de identidad</p>
@@ -147,6 +158,28 @@ export default async function GuestDetailPage({ params }: Props) {
                     <img src={profilePhotoUrl} alt="Perfil" className="w-full rounded border border-white/10 hover:opacity-80 transition-opacity" />
                   </a>
                 </div>
+              )}
+            </div>
+          </Section>
+        )}
+
+        {/* Comprobante de pago */}
+        {paymentProofUrl && (
+          <Section title="Comprobante de pago">
+            <div className="p-4">
+              {(paymentProofUrl as string).includes('.pdf') ? (
+                <a
+                  href={paymentProofUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 text-white/70 text-sm rounded border border-white/10 hover:bg-white/10 transition-colors"
+                >
+                  Ver PDF
+                </a>
+              ) : (
+                <a href={paymentProofUrl} target="_blank" rel="noopener noreferrer">
+                  <img src={paymentProofUrl} alt="Comprobante" className="max-w-sm rounded border border-white/10 hover:opacity-80 transition-opacity" />
+                </a>
               )}
             </div>
           </Section>

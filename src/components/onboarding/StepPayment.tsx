@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useOnboardingStore } from "@/store/onboarding-store";
 import { t } from "@/lib/onboarding-text";
@@ -8,6 +9,7 @@ import { paymentMethods } from "@/lib/mock-data";
 export function StepPayment() {
   const data = useOnboardingStore((s) => s.data);
   const updateField = useOnboardingStore((s) => s.updateField);
+  const setPaymentProof = useOnboardingStore((s) => s.setPaymentProof);
   const language = useOnboardingStore((s) => s.language);
 
   const selected = paymentMethods.find((m) => m.id === data.paymentMethod);
@@ -97,9 +99,94 @@ export function StepPayment() {
         )}
       </div>
 
+      {data.paymentMethod && (
+        <div className="pt-4 border-t border-hairline">
+          <label className="block text-xs uppercase tracking-[0.15em] text-black mb-2">
+            {language === "es" ? "Comprobante de pago" : "Payment proof"}
+          </label>
+          <p className="text-[11px] text-black/50 mb-3">
+            {language === "es"
+              ? "Adjunta el comprobante de transferencia o captura de pantalla del pago. PDF o imagen."
+              : "Attach your transfer confirmation or payment screenshot. PDF or image."}
+          </p>
+          <ProofDropzone
+            file={data.paymentProof ?? null}
+            onChange={setPaymentProof}
+            language={language}
+          />
+        </div>
+      )}
+
       <div className="text-[11px] text-black/50 leading-relaxed pt-4 border-t border-hairline">
         {t("stepPayment.contactLabel", language)}
       </div>
     </div>
+  );
+}
+
+function ProofDropzone({
+  file,
+  onChange,
+  language,
+}: {
+  file: File | null;
+  onChange: (f: File | null) => void;
+  language: "es" | "en";
+}) {
+  const [dragging, setDragging] = useState(false);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setDragging(false);
+      const f = e.dataTransfer.files[0];
+      if (f) onChange(f);
+    },
+    [onChange]
+  );
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) onChange(f);
+  };
+
+  if (file) {
+    return (
+      <div className="flex items-center justify-between px-4 py-3 bg-surface-soft border border-hairline">
+        <span className="text-sm text-black truncate mr-4">{file.name}</span>
+        <button
+          type="button"
+          onClick={() => onChange(null)}
+          className="text-[11px] text-black hover:text-primary transition-colors duration-300 cursor-pointer underline"
+        >
+          {language === "es" ? "Quitar" : "Remove"}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <label
+      onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+      onDragLeave={() => setDragging(false)}
+      onDrop={handleDrop}
+      className={`flex flex-col items-center justify-center h-28 border-2 border-dashed cursor-pointer transition-colors duration-200 ${
+        dragging
+          ? "border-primary bg-primary/[0.03]"
+          : "border-hairline hover:border-ink/30 bg-canvas"
+      }`}
+    >
+      <input
+        type="file"
+        accept="image/jpeg,image/png,image/webp,application/pdf"
+        onChange={handleChange}
+        className="hidden"
+      />
+      <span className="text-xs text-black">
+        {dragging
+          ? (language === "es" ? "Suelta aquí" : "Drop here")
+          : (language === "es" ? "Arrastra o haz clic para subir" : "Drag or click to upload")}
+      </span>
+    </label>
   );
 }

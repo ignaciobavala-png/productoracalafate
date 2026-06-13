@@ -25,6 +25,7 @@ interface OnboardingState {
   ) => void;
   setIdPhoto: (file: File | null) => void;
   setProfilePhoto: (file: File | null) => void;
+  setPaymentProof: (file: File | null) => void;
   toggleDietary: (restriction: string) => void;
   submit: () => Promise<void>;
   reset: () => void;
@@ -52,6 +53,7 @@ const initialData: Partial<GuestOnboardingData> = {
   dietaryDetails: "",
   idPhoto: null,
   profilePhoto: null,
+  paymentProof: null,
   bio: "",
   needsInvoice: false,
   paymentMethod: "",
@@ -90,6 +92,7 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
 
   setIdPhoto: (file) => set((s) => ({ data: { ...s.data, idPhoto: file } })),
   setProfilePhoto: (file) => set((s) => ({ data: { ...s.data, profilePhoto: file } })),
+  setPaymentProof: (file) => set((s) => ({ data: { ...s.data, paymentProof: file } })),
 
   toggleDietary: (restriction) =>
     set((s) => {
@@ -169,6 +172,17 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
           uploadFile("guest-profile-photos", `${guestId}/profile.${ext}`, data.profilePhoto)
             .then((path) =>
               supabase.from("guests").update({ profile_photo_url: path }).eq("id", guestId)
+            )
+            .then(() => undefined)
+        );
+      }
+
+      if (data.paymentProof) {
+        const ext = data.paymentProof.name.split(".").pop() ?? "jpg";
+        uploads.push(
+          uploadFile("guest-payment-proofs", `${guestId}/comprobante.${ext}`, data.paymentProof)
+            .then((path) =>
+              supabase.from("guests").update({ payment_proof_url: path }).eq("id", guestId)
             )
             .then(() => undefined)
         );
