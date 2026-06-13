@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { updateContent } from './actions'
+import { AssetUploader } from './AssetUploader'
 
 const SECTION_LABELS: Record<string, string> = {
   hero:       'Hero',
@@ -11,11 +12,10 @@ const SECTION_LABELS: Record<string, string> = {
 
 export default async function ContentPage() {
   const supabase = await createClient()
-  const { data: rows } = await supabase
-    .from('site_content')
-    .select('*')
-    .order('section')
-    .order('key')
+  const [{ data: rows }, { data: assets }] = await Promise.all([
+    supabase.from('site_content').select('*').order('section').order('key'),
+    supabase.from('site_assets').select('*').order('key'),
+  ])
 
   const bySection: Record<string, typeof rows> = {}
   for (const row of rows ?? []) {
@@ -28,6 +28,34 @@ export default async function ContentPage() {
       <h1 className="text-xl font-semibold mb-6">Contenido del sitio</h1>
 
       <div className="space-y-8">
+        {/* Assets multimedia */}
+        {assets && assets.length > 0 && (
+          <div>
+            <h2 className="text-xs font-medium text-white/40 uppercase tracking-wider mb-3">
+              Multimedia
+            </h2>
+            <div className="border border-white/10 rounded-lg overflow-hidden divide-y divide-white/5">
+              {assets.map(asset => (
+                <div key={asset.id}>
+                  <div className="px-4 pt-4">
+                    <p className="text-xs text-white/30 font-mono">{asset.key}</p>
+                    {asset.label && (
+                      <p className="text-sm text-white/60 mt-0.5">{asset.label}</p>
+                    )}
+                  </div>
+                  <AssetUploader
+                    assetKey={asset.key}
+                    assetId={asset.id}
+                    currentUrl={asset.url}
+                    type={asset.type as 'video' | 'image'}
+                    label={asset.label ?? asset.key}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {Object.entries(bySection).map(([section, sectionRows]) => (
           <div key={section}>
             <h2 className="text-xs font-medium text-white/40 uppercase tracking-wider mb-3">
