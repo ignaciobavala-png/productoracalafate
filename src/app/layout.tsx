@@ -17,6 +17,10 @@ export const metadata: Metadata = {
   title: "Torres del Paine Summit 2026 — Productora Calafate",
   description:
     "Un encuentro inusual en la Patagonia. Tres días de conversaciones reales, desconexión digital y paisaje indómito.",
+  icons: {
+    icon: "/montana.png",
+    apple: "/montana.png",
+  },
 };
 
 export default function RootLayout({
