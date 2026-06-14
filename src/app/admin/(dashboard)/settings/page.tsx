@@ -19,17 +19,17 @@ export default async function SettingsPage() {
           const saveDetails = updatePaymentDetails.bind(null, m.id)
 
           return (
-            <div key={m.id} className="border border-white/10 rounded-lg overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 bg-white/[0.02] border-b border-white/10">
+            <div key={m.id} className="border border-black/10 rounded-lg overflow-hidden bg-white">
+              <div className="flex items-center justify-between px-4 py-3 bg-black/[0.02] border-b border-black/10">
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-medium">{m.label}</span>
-                  <span className="text-xs text-white/30 font-mono">{m.currency}</span>
-                  <span className={`text-xs px-2 py-0.5 rounded ${m.is_active ? 'bg-green-500/10 text-green-400' : 'bg-white/5 text-white/20'}`}>
+                  <span className="text-xs text-black/30 font-mono">{m.currency}</span>
+                  <span className={`text-xs px-2 py-0.5 rounded ${m.is_active ? 'bg-green-100 text-green-800' : 'bg-black/5 text-black/20'}`}>
                     {m.is_active ? 'Activo' : 'Inactivo'}
                   </span>
                 </div>
                 <form action={m.is_active ? toggleOff : toggleOn}>
-                  <button type="submit" className="text-xs text-white/40 hover:text-white transition-colors">
+                  <button type="submit" className="text-xs text-black/40 hover:text-black transition-colors">
                     {m.is_active ? 'Desactivar' : 'Activar'}
                   </button>
                 </form>
@@ -37,27 +37,27 @@ export default async function SettingsPage() {
 
               <form action={saveDetails} className="p-4 space-y-3">
                 <div>
-                  <label className="block text-xs text-white/40 mb-1">Etiqueta</label>
+                  <label className="block text-xs text-black/40 mb-1">Etiqueta</label>
                   <input
                     name="label"
                     defaultValue={m.label}
-                    className="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-white/25"
+                    className="w-full bg-[#f7f7f7] border border-black/10 rounded px-3 py-2 text-sm text-black focus:outline-none focus:border-black/25"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-white/40 mb-1">
+                  <label className="block text-xs text-black/40 mb-1">
                     Detalles (una línea por ítem)
                   </label>
                   <textarea
                     name="details"
                     defaultValue={m.details?.join('\n') ?? ''}
                     rows={m.details?.length ?? 3}
-                    className="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-white/25 resize-none"
+                    className="w-full bg-[#f7f7f7] border border-black/10 rounded px-3 py-2 text-sm text-black font-mono focus:outline-none focus:border-black/25 resize-none"
                   />
                 </div>
                 <button
                   type="submit"
-                  className="px-3 py-1.5 bg-white/10 text-white text-xs rounded hover:bg-white/15 transition-colors"
+                  className="px-3 py-1.5 bg-black/10 text-black text-xs rounded hover:bg-black/15 transition-colors"
                 >
                   Guardar
                 </button>

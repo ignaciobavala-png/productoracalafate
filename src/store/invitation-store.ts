@@ -2,12 +2,18 @@ import { create } from "zustand";
 
 interface InvitationState {
   isOpen: boolean;
+  isUnlocked: boolean;
+  validatedCode: string | null;
   open: () => void;
   close: () => void;
+  unlock: (code: string) => void;
 }
 
 export const useInvitationStore = create<InvitationState>((set) => ({
   isOpen: false,
+  isUnlocked: false,
+  validatedCode: null,
   open: () => set({ isOpen: true }),
   close: () => set({ isOpen: false }),
+  unlock: (code) => set({ isUnlocked: true, validatedCode: code }),
 }));

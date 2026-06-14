@@ -8,9 +8,9 @@ const STATUS_LABEL: Record<string, string> = {
   rejected: 'Rechazado',
 }
 const STATUS_COLOR: Record<string, string> = {
-  pending: 'bg-yellow-500/10 text-yellow-400',
-  confirmed: 'bg-green-500/10 text-green-400',
-  rejected: 'bg-red-500/10 text-red-400',
+  pending: 'bg-yellow-100 text-yellow-800',
+  confirmed: 'bg-green-100 text-green-800',
+  rejected: 'bg-red-100 text-red-800',
 }
 
 interface Props {
@@ -64,10 +64,10 @@ export default async function GuestDetailPage({ params }: Props) {
     <div className="max-w-3xl">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <a href="/admin/guests" className="text-white/30 hover:text-white/60 text-sm transition-colors">
+          <a href="/admin/guests" className="text-black/30 hover:text-black/60 text-sm transition-colors">
             ← Registros
           </a>
-          <span className="text-white/10">/</span>
+          <span className="text-black/10">/</span>
           <h1 className="text-xl font-semibold">{guest.full_name}</h1>
           <span className={`inline-block px-2 py-0.5 rounded text-xs ${STATUS_COLOR[guest.status]}`}>
             {STATUS_LABEL[guest.status]}
@@ -79,7 +79,7 @@ export default async function GuestDetailPage({ params }: Props) {
             <button
               type="submit"
               disabled={guest.status === 'confirmed'}
-              className="px-3 py-1.5 text-xs bg-green-500/10 text-green-400 rounded hover:bg-green-500/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1.5 text-xs bg-green-100 text-green-800 rounded hover:bg-green-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               Confirmar
             </button>
@@ -88,7 +88,7 @@ export default async function GuestDetailPage({ params }: Props) {
             <button
               type="submit"
               disabled={guest.status === 'pending'}
-              className="px-3 py-1.5 text-xs bg-yellow-500/10 text-yellow-400 rounded hover:bg-yellow-500/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1.5 text-xs bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               Pendiente
             </button>
@@ -97,7 +97,7 @@ export default async function GuestDetailPage({ params }: Props) {
             <button
               type="submit"
               disabled={guest.status === 'rejected'}
-              className="px-3 py-1.5 text-xs bg-red-500/10 text-red-400 rounded hover:bg-red-500/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1.5 text-xs bg-red-100 text-red-800 rounded hover:bg-red-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               Rechazar
             </button>
@@ -132,9 +132,9 @@ export default async function GuestDetailPage({ params }: Props) {
           />
           {guest.dietary_details && <Row label="Detalles" value={guest.dietary_details} />}
           {guest.bio && (
-            <div className="py-3 border-b border-white/5">
-              <p className="text-xs text-white/40 mb-1">Bio</p>
-              <p className="text-sm text-white/70 whitespace-pre-wrap">{guest.bio}</p>
+            <div className="py-3 border-b border-black/5">
+              <p className="text-xs text-black/40 mb-1">Bio</p>
+              <p className="text-sm text-black/70 whitespace-pre-wrap">{guest.bio}</p>
             </div>
           )}
         </Section>
@@ -145,17 +145,17 @@ export default async function GuestDetailPage({ params }: Props) {
             <div className="grid grid-cols-2 gap-4 p-4">
               {idPhotoUrl && (
                 <div>
-                  <p className="text-xs text-white/40 mb-2">Documento de identidad</p>
+                  <p className="text-xs text-black/40 mb-2">Documento de identidad</p>
                   <a href={idPhotoUrl} target="_blank" rel="noopener noreferrer">
-                    <img src={idPhotoUrl} alt="ID" className="w-full rounded border border-white/10 hover:opacity-80 transition-opacity" />
+                    <img src={idPhotoUrl} alt="ID" className="w-full rounded border border-black/10 hover:opacity-80 transition-opacity" />
                   </a>
                 </div>
               )}
               {profilePhotoUrl && (
                 <div>
-                  <p className="text-xs text-white/40 mb-2">Foto de perfil</p>
+                  <p className="text-xs text-black/40 mb-2">Foto de perfil</p>
                   <a href={profilePhotoUrl} target="_blank" rel="noopener noreferrer">
-                    <img src={profilePhotoUrl} alt="Perfil" className="w-full rounded border border-white/10 hover:opacity-80 transition-opacity" />
+                    <img src={profilePhotoUrl} alt="Perfil" className="w-full rounded border border-black/10 hover:opacity-80 transition-opacity" />
                   </a>
                 </div>
               )}
@@ -172,13 +172,13 @@ export default async function GuestDetailPage({ params }: Props) {
                   href={paymentProofUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 text-white/70 text-sm rounded border border-white/10 hover:bg-white/10 transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-black/5 text-black/70 text-sm rounded border border-black/10 hover:bg-black/10 transition-colors"
                 >
                   Ver PDF
                 </a>
               ) : (
                 <a href={paymentProofUrl} target="_blank" rel="noopener noreferrer">
-                  <img src={paymentProofUrl} alt="Comprobante" className="max-w-sm rounded border border-white/10 hover:opacity-80 transition-opacity" />
+                  <img src={paymentProofUrl} alt="Comprobante" className="max-w-sm rounded border border-black/10 hover:opacity-80 transition-opacity" />
                 </a>
               )}
             </div>
@@ -203,11 +203,11 @@ export default async function GuestDetailPage({ params }: Props) {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="border border-white/10 rounded-lg overflow-hidden">
-      <div className="px-4 py-2.5 bg-white/[0.02] border-b border-white/10">
-        <h2 className="text-xs font-medium text-white/40 uppercase tracking-wider">{title}</h2>
+    <div className="border border-black/10 rounded-lg overflow-hidden bg-white">
+      <div className="px-4 py-2.5 bg-black/[0.02] border-b border-black/10">
+        <h2 className="text-xs font-medium text-black/40 uppercase tracking-wider">{title}</h2>
       </div>
-      <div className="divide-y divide-white/5">{children}</div>
+      <div className="divide-y divide-black/5">{children}</div>
     </div>
   )
 }
@@ -215,8 +215,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Row({ label, value }: { label: string; value?: string | null }) {
   return (
     <div className="flex items-start px-4 py-2.5">
-      <span className="text-xs text-white/30 w-36 shrink-0 pt-0.5">{label}</span>
-      <span className="text-sm text-white/70">{value ?? '—'}</span>
+      <span className="text-xs text-black/30 w-36 shrink-0 pt-0.5">{label}</span>
+      <span className="text-sm text-black/70">{value ?? '—'}</span>
     </div>
   )
 }

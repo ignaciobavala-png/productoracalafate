@@ -23,24 +23,24 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   ]
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white flex">
+    <div className="min-h-screen bg-[#f7f7f7] text-black flex">
       {/* Sidebar */}
-      <aside className="w-56 shrink-0 border-r border-white/10 flex flex-col sticky top-0 h-screen">
+      <aside className="w-56 shrink-0 border-r border-black/10 flex flex-col sticky top-0 h-screen bg-white">
         {/* Logo */}
-        <div className="px-4 py-5 border-b border-white/10">
-          <p className="text-[10px] tracking-[0.25em] text-white/30 uppercase mb-0.5">Admin</p>
-          <p className="text-sm font-semibold text-white leading-tight">Torres del Paine<br/>Summit 2026</p>
+        <div className="px-4 py-5 border-b border-black/10">
+          <p className="text-[10px] tracking-[0.25em] text-black/30 uppercase mb-0.5">Admin</p>
+          <p className="text-sm font-semibold text-black leading-tight">Torres del Paine<br/>Summit 2026</p>
         </div>
 
         {/* Stats rápidas */}
-        <div className="px-4 py-4 border-b border-white/10 grid grid-cols-2 gap-2">
-          <div className="bg-white/5 rounded-md px-3 py-2">
-            <p className="text-[10px] text-white/30 uppercase tracking-wider">Total</p>
+        <div className="px-4 py-4 border-b border-black/10 grid grid-cols-2 gap-2">
+          <div className="bg-[#eef0f3] rounded-md px-3 py-2">
+            <p className="text-[10px] text-black/30 uppercase tracking-wider">Total</p>
             <p className="text-xl font-semibold tabular-nums">{totalGuests ?? 0}</p>
           </div>
-          <div className="bg-yellow-500/10 rounded-md px-3 py-2">
-            <p className="text-[10px] text-yellow-400/60 uppercase tracking-wider">Pendientes</p>
-            <p className="text-xl font-semibold tabular-nums text-yellow-400">{pending ?? 0}</p>
+          <div className="bg-yellow-100 rounded-md px-3 py-2">
+            <p className="text-[10px] text-yellow-700/60 uppercase tracking-wider">Pendientes</p>
+            <p className="text-xl font-semibold tabular-nums text-yellow-700">{pending ?? 0}</p>
           </div>
         </div>
 
@@ -50,12 +50,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </div>
 
         {/* Usuario */}
-        <div className="px-4 py-4 border-t border-white/10">
-          <p className="text-[11px] text-white/30 truncate mb-2">{user.email}</p>
+        <div className="px-4 py-4 border-t border-black/10">
+          <p className="text-[11px] text-black/30 truncate mb-2">{user.email}</p>
           <form action={logoutAction}>
             <button
               type="submit"
-              className="w-full text-left text-xs text-white/40 hover:text-white transition-colors py-1"
+              className="w-full text-left text-xs text-black/40 hover:text-black transition-colors py-1"
             >
               Cerrar sesión →
             </button>

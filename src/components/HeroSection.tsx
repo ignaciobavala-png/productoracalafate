@@ -27,7 +27,6 @@ export function HeroSection({ videoSrc }: HeroSectionProps) {
             loop
             playsInline
             className="absolute inset-0 w-full h-full object-cover"
-            poster="/hero-fallback.jpg"
           >
             <source src={videoSrc} type="video/mp4" />
           </video>

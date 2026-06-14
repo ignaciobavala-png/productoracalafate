@@ -25,14 +25,14 @@ export function SidebarNav({ items }: Props) {
             href={item.href}
             className={`flex items-center justify-between px-3 py-2.5 rounded-md text-sm transition-colors ${
               active
-                ? 'bg-white text-zinc-900 font-medium'
-                : 'text-white/60 hover:text-white hover:bg-white/8'
+                ? 'bg-black text-white font-medium'
+                : 'text-black/50 hover:text-black hover:bg-black/5'
             }`}
           >
             <span>{item.label}</span>
             {item.badge !== undefined && item.badge > 0 && (
               <span className={`text-xs px-1.5 py-0.5 rounded-full tabular-nums ${
-                active ? 'bg-zinc-900/15 text-zinc-900' : 'bg-white/10 text-white/50'
+                active ? 'bg-white/20 text-white' : 'bg-black/10 text-black/50'
               }`}>
                 {item.badge}
               </span>

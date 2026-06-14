@@ -5,23 +5,51 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useInvitationStore } from "@/store/invitation-store";
 import { useOnboardingStore } from "@/store/onboarding-store";
 import { t } from "@/lib/onboarding-text";
+import { validateInvitationCode } from "@/app/actions/validate-invitation";
+import { logInvitationRequest } from "@/app/actions/log-invitation-request";
 
 export function InvitationModal() {
-  const { isOpen, close } = useInvitationStore();
+  const { isOpen, close, unlock } = useInvitationStore();
   const language = useOnboardingStore((s) => s.language);
   const [code, setCode] = useState("");
   const [email, setEmail] = useState("");
-  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isValidating, setIsValidating] = useState(false);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setError(null);
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setError(t("invitation.errorEmail", language));
+      return;
+    }
+
+    setIsValidating(true);
+
+    try {
+      const result = await validateInvitationCode(code);
+
+      logInvitationRequest(code.trim().toUpperCase(), trimmedEmail);
+
+      if (result.valid) {
+        unlock(result.code!);
+        handleClose();
+      } else {
+        setError(result.error || t("invitation.errorInvalid", language));
+      }
+    } catch {
+      setError(t("invitation.errorInvalid", language));
+    } finally {
+      setIsValidating(false);
+    }
   };
 
   const handleClose = () => {
     setCode("");
     setEmail("");
-    setSubmitted(false);
+    setError(null);
     close();
   };
 
@@ -62,98 +90,82 @@ export function InvitationModal() {
               </svg>
             </button>
 
-            {!submitted ? (
-              <>
-                <h2 className="text-2xl font-semibold tracking-[-0.02em] text-black">
-                  {t("invitation.title", language)}
-                </h2>
-                <p className="mt-3 text-sm text-black leading-relaxed font-normal">
-                  {t("invitation.description", language)}
-                </p>
+            <h2 className="text-2xl font-semibold tracking-[-0.02em] text-black">
+              {t("invitation.title", language)}
+            </h2>
+            <p className="mt-3 text-sm text-black leading-relaxed font-normal">
+              {t("invitation.description", language)}
+            </p>
 
-                <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-                  <div>
-                    <label
-                      htmlFor="invite-code"
-                      className="block text-xs uppercase tracking-[0.15em] text-black mb-2"
-                    >
-                      {t("invitation.codeLabel", language)}
-                    </label>
-                    <input
-                      id="invite-code"
-                      type="text"
-                      value={code}
-                      onChange={(e) => setCode(e.target.value)}
-                      required
-                      className="w-full h-12 px-4 bg-canvas border border-hairline text-black text-sm placeholder:text-black/30 focus:ring-0 focus:border-2 focus:border-primary transition-colors duration-200"
-                      placeholder={t("invitation.codePlaceholder", language)}
-                    />
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="invite-email"
-                      className="block text-xs uppercase tracking-[0.15em] text-black mb-2"
-                    >
-                      {t("invitation.emailLabel", language)}
-                    </label>
-                    <input
-                      id="invite-email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      className="w-full h-12 px-4 bg-canvas border border-hairline text-black text-sm placeholder:text-black/30 focus:ring-0 focus:border-2 focus:border-primary transition-colors duration-200"
-                      placeholder={t("invitation.emailPlaceholder", language)}
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full py-3 px-6 bg-primary text-on-primary text-sm font-semibold hover:bg-primary-active transition-colors duration-200 cursor-pointer"
-                  >
-                    {t("invitation.submit", language)}
-                  </button>
-                </form>
-
-                <p className="mt-6 text-xs text-black text-center leading-relaxed">
-                  {t("invitation.footer", language)}{" "}
-                  <a
-                    href="mailto:calafatesummits@gmail.com"
-                    className="underline underline-offset-4 hover:text-primary transition-colors"
-                  >
-                    calafatesummits@gmail.com
-                  </a>
-                </p>
-              </>
-            ) : (
-              <div className="text-center py-6">
-                <div className="w-12 h-12 mx-auto mb-6 border border-primary/30 flex items-center justify-center">
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    stroke="var(--color-primary)"
-                    strokeWidth="1.5"
-                  >
-                    <path d="M4 10l4 4 8-8" />
-                  </svg>
-                </div>
-                <h2 className="text-xl font-semibold tracking-[-0.02em] text-black">
-                  {t("invitation.successTitle", language)}
-                </h2>
-                <p className="mt-3 text-sm text-black leading-relaxed font-normal">
-                  {t("invitation.successMessage", language)}
-                </p>
-                <button
-                  onClick={handleClose}
-                  className="mt-8 text-xs uppercase tracking-[0.15em] text-primary hover:text-primary-active transition-colors duration-300 cursor-pointer"
+            <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+              <div>
+                <label
+                  htmlFor="invite-code"
+                  className="block text-xs uppercase tracking-[0.15em] text-black mb-2"
                 >
-                  {t("invitation.close", language)}
-                </button>
+                  {t("invitation.codeLabel", language)}
+                </label>
+                <input
+                  id="invite-code"
+                  type="text"
+                  value={code}
+                  onChange={(e) => {
+                    setCode(e.target.value);
+                    if (error) setError(null);
+                  }}
+                  required
+                  autoComplete="off"
+                  className="w-full h-12 px-4 bg-canvas border border-hairline text-black text-sm placeholder:text-black/30 focus:ring-0 focus:border-2 focus:border-primary transition-colors duration-200"
+                  placeholder={t("invitation.codePlaceholder", language)}
+                />
               </div>
-            )}
+
+              <div>
+                <label
+                  htmlFor="invite-email"
+                  className="block text-xs uppercase tracking-[0.15em] text-black mb-2"
+                >
+                  {t("invitation.emailLabel", language)}
+                </label>
+                <input
+                  id="invite-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (error) setError(null);
+                  }}
+                  required
+                  autoComplete="email"
+                  className="w-full h-12 px-4 bg-canvas border border-hairline text-black text-sm placeholder:text-black/30 focus:ring-0 focus:border-2 focus:border-primary transition-colors duration-200"
+                  placeholder={t("invitation.emailPlaceholder", language)}
+                />
+              </div>
+
+              {error && (
+                <p className="text-sm text-red-600 leading-relaxed">{error}</p>
+              )}
+
+              <button
+                type="submit"
+                disabled={isValidating}
+                className="w-full py-3 px-6 bg-primary text-on-primary text-sm font-semibold hover:bg-primary-active transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isValidating
+                  ? t("invitation.validating", language)
+                  : t("invitation.submit", language)}
+              </button>
+            </form>
+
+            <p className="mt-6 text-xs text-black text-center leading-relaxed">
+              {t("invitation.footer", language)}{" "}
+              <a
+                href="mailto:calafatesummits@gmail.com"
+                className="underline underline-offset-4 hover:text-primary transition-colors"
+              >
+                calafatesummits@gmail.com
+              </a>
+            </p>
           </motion.div>
         </div>
       )}

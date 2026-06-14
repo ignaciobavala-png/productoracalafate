@@ -1,7 +1,9 @@
 "use client";
 
+import { useState, type FormEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useOnboardingStore } from "@/store/onboarding-store";
+import { useInvitationStore } from "@/store/invitation-store";
 import { t } from "@/lib/onboarding-text";
 import { StepIndicator } from "@/components/onboarding/StepIndicator";
 import { StepPersonal } from "@/components/onboarding/StepPersonal";
@@ -9,6 +11,8 @@ import { StepDocuments } from "@/components/onboarding/StepDocuments";
 import { StepPayment } from "@/components/onboarding/StepPayment";
 import { StepConfirm } from "@/components/onboarding/StepConfirm";
 import { SuccessScreen } from "@/components/onboarding/SuccessScreen";
+import { validateInvitationCode } from "@/app/actions/validate-invitation";
+import { logInvitationRequest } from "@/app/actions/log-invitation-request";
 
 const STEP_TITLES: Record<number, string> = {
   1: "stepPersonal.title",
@@ -17,6 +21,129 @@ const STEP_TITLES: Record<number, string> = {
   4: "stepConfirm.title",
 };
 
+function InvitationGate() {
+  const language = useOnboardingStore((s) => s.language);
+  const unlock = useInvitationStore((s) => s.unlock);
+  const [code, setCode] = useState("");
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isValidating, setIsValidating] = useState(false);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setError(t("invitation.errorEmail", language));
+      return;
+    }
+
+    setIsValidating(true);
+
+    try {
+      const result = await validateInvitationCode(code);
+
+      logInvitationRequest(code.trim().toUpperCase(), trimmedEmail);
+
+      if (result.valid) {
+        unlock(result.code!);
+      } else {
+        setError(result.error || t("invitation.errorInvalid", language));
+      }
+    } catch {
+      setError(t("invitation.errorInvalid", language));
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
+  return (
+    <section id="onboarding" className="min-h-screen flex items-center py-24 md:py-32">
+      <div className="max-w-[1200px] mx-auto px-6 md:px-8 w-full">
+        <div className="max-w-md mx-auto">
+          <h2 className="text-2xl md:text-3xl font-semibold tracking-[-0.02em] text-black text-center">
+            {t("invitation.title", language)}
+          </h2>
+          <p className="mt-3 text-sm text-black leading-relaxed font-normal text-center">
+            {t("invitation.description", language)}
+          </p>
+
+          <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+            <div>
+              <label
+                htmlFor="gate-invite-code"
+                className="block text-xs uppercase tracking-[0.15em] text-black mb-2"
+              >
+                {t("invitation.codeLabel", language)}
+              </label>
+              <input
+                id="gate-invite-code"
+                type="text"
+                value={code}
+                onChange={(e) => {
+                  setCode(e.target.value);
+                  if (error) setError(null);
+                }}
+                required
+                autoComplete="off"
+                className="w-full h-12 px-4 bg-canvas border border-hairline text-black text-sm placeholder:text-black/30 focus:ring-0 focus:border-2 focus:border-primary transition-colors duration-200"
+                placeholder={t("invitation.codePlaceholder", language)}
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="gate-invite-email"
+                className="block text-xs uppercase tracking-[0.15em] text-black mb-2"
+              >
+                {t("invitation.emailLabel", language)}
+              </label>
+              <input
+                id="gate-invite-email"
+                type="email"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (error) setError(null);
+                }}
+                required
+                autoComplete="email"
+                className="w-full h-12 px-4 bg-canvas border border-hairline text-black text-sm placeholder:text-black/30 focus:ring-0 focus:border-2 focus:border-primary transition-colors duration-200"
+                placeholder={t("invitation.emailPlaceholder", language)}
+              />
+            </div>
+
+            {error && (
+              <p className="text-sm text-red-600 leading-relaxed">{error}</p>
+            )}
+
+            <button
+              type="submit"
+              disabled={isValidating}
+              className="w-full py-3 px-6 bg-primary text-on-primary text-sm font-semibold hover:bg-primary-active transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isValidating
+                ? t("invitation.validating", language)
+                : t("invitation.submit", language)}
+            </button>
+          </form>
+
+          <p className="mt-6 text-xs text-black text-center leading-relaxed">
+            {t("invitation.footer", language)}{" "}
+            <a
+              href="mailto:calafatesummits@gmail.com"
+              className="underline underline-offset-4 hover:text-primary transition-colors"
+            >
+              calafatesummits@gmail.com
+            </a>
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function OnboardingPage() {
   const step = useOnboardingStore((s) => s.step);
   const language = useOnboardingStore((s) => s.language);
@@ -24,6 +151,11 @@ export function OnboardingPage() {
   const nextStep = useOnboardingStore((s) => s.nextStep);
   const prevStep = useOnboardingStore((s) => s.prevStep);
   const acceptedTerms = useOnboardingStore((s) => s.data.acceptedTerms);
+  const isUnlocked = useInvitationStore((s) => s.isUnlocked);
+
+  if (!isUnlocked) {
+    return <InvitationGate />;
+  }
 
   if (isSubmitted) {
     return (

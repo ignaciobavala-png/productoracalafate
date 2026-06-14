@@ -3,6 +3,8 @@ import type { GuestOnboardingData, CompanionData } from "@/types";
 import type { Language } from "@/lib/onboarding-text";
 import { createClient } from "@/lib/supabase/client";
 import { uploadFile } from "@/lib/supabase/storage";
+import { useInvitationStore } from "@/store/invitation-store";
+import { consumeInvitationCode } from "@/app/actions/consume-invitation";
 
 interface OnboardingState {
   step: number;
@@ -127,6 +129,7 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
 
     try {
       const supabase = createClient();
+      const validatedCode = useInvitationStore.getState().validatedCode;
 
       // Insertar guest primero para obtener el ID generado
       const { data: guest, error: guestError } = await supabase
@@ -145,12 +148,18 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
           needs_invoice: data.needsInvoice ?? false,
           payment_method_id: data.paymentMethod || null,
           accepted_terms: data.acceptedTerms ?? false,
+          invitation_code: validatedCode,
         })
         .select("id")
         .single();
 
       if (guestError) throw guestError;
       const guestId = guest.id;
+
+      // Marcar la invitación como usada
+      if (validatedCode) {
+        await consumeInvitationCode(validatedCode, guestId)
+      }
 
       // Subir fotos en paralelo
       const uploads: Promise<void>[] = [];

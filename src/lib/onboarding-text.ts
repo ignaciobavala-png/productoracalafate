@@ -258,6 +258,30 @@ export const onboardingText = {
       en: "Thank you. We'll contact you soon if your profile aligns with the spirit of this gathering.",
     },
     close: { es: "Cerrar", en: "Close" },
+    errorInvalid: {
+      es: "Código inválido o ya utilizado.",
+      en: "Invalid or already used code.",
+    },
+    errorEmail: {
+      es: "Ingresá tu correo electrónico.",
+      en: "Enter your email address.",
+    },
+    validating: { es: "Validando…", en: "Validating…" },
+  },
+
+  gate: {
+    title: {
+      es: "Este encuentro es por invitación",
+      en: "This gathering is by invitation only",
+    },
+    description: {
+      es: "Ingresá tu código de invitación para acceder al formulario de aplicación.",
+      en: "Enter your invitation code to access the application form.",
+    },
+    button: {
+      es: "Ingresar código de invitación",
+      en: "Enter invitation code",
+    },
   },
 
   shared: {

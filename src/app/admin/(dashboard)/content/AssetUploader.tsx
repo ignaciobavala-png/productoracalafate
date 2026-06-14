@@ -52,9 +52,9 @@ export function AssetUploader({ assetKey, assetId, currentUrl, type, label }: Pr
   return (
     <div className="p-4 space-y-3">
       <div>
-        <p className="text-xs text-white/40 mb-1">URL actual</p>
-        <p className="text-xs font-mono text-white/50 break-all">
-          {url || <span className="text-white/20 italic">Sin archivo</span>}
+        <p className="text-xs text-black/40 mb-1">URL actual</p>
+        <p className="text-xs font-mono text-black/50 break-all">
+          {url || <span className="text-black/20 italic">Sin archivo</span>}
         </p>
       </div>
 
@@ -62,14 +62,14 @@ export function AssetUploader({ assetKey, assetId, currentUrl, type, label }: Pr
         <img
           src={url}
           alt={label}
-          className="max-h-32 rounded border border-white/10 object-cover"
+          className="max-h-32 rounded border border-black/10 object-cover"
         />
       )}
 
       {url && type === 'video' && (
         <video
           src={url}
-          className="max-h-32 rounded border border-white/10 w-full object-cover"
+          className="max-h-32 rounded border border-black/10 w-full object-cover"
           muted
           playsInline
         />
@@ -90,12 +90,12 @@ export function AssetUploader({ assetKey, assetId, currentUrl, type, label }: Pr
           type="button"
           disabled={uploading}
           onClick={() => inputRef.current?.click()}
-          className="px-4 py-2 bg-white text-black text-sm font-medium rounded hover:bg-white/90 disabled:opacity-40 transition-colors"
+          className="px-4 py-2 bg-black text-white text-sm font-medium rounded hover:bg-black/80 disabled:opacity-40 transition-colors"
         >
           {uploading ? 'Subiendo…' : `Subir ${type === 'video' ? 'video' : 'imagen'}`}
         </button>
         {uploading && (
-          <span className="text-xs text-white/30 animate-pulse">Procesando…</span>
+          <span className="text-xs text-black/30 animate-pulse">Procesando…</span>
         )}
       </div>
 
