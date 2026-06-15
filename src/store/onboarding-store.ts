@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { uploadFile } from "@/lib/supabase/storage";
 import { useInvitationStore } from "@/store/invitation-store";
 import { consumeInvitationCode } from "@/app/actions/consume-invitation";
+import { updateGuestUrl } from "@/app/actions/update-guest-urls";
 
 interface OnboardingState {
   step: number;
@@ -168,10 +169,7 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
         const ext = data.idPhoto.name.split(".").pop() ?? "jpg";
         uploads.push(
           uploadFile("guest-id-photos", `${guestId}/id.${ext}`, data.idPhoto)
-            .then((path) =>
-              supabase.from("guests").update({ id_photo_url: path }).eq("id", guestId)
-            )
-            .then(() => undefined)
+            .then((path) => updateGuestUrl(guestId, "id_photo_url", path))
         );
       }
 
@@ -179,10 +177,7 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
         const ext = data.profilePhoto.name.split(".").pop() ?? "jpg";
         uploads.push(
           uploadFile("guest-profile-photos", `${guestId}/profile.${ext}`, data.profilePhoto)
-            .then((path) =>
-              supabase.from("guests").update({ profile_photo_url: path }).eq("id", guestId)
-            )
-            .then(() => undefined)
+            .then((path) => updateGuestUrl(guestId, "profile_photo_url", path))
         );
       }
 
@@ -190,10 +185,7 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
         const ext = data.paymentProof.name.split(".").pop() ?? "jpg";
         uploads.push(
           uploadFile("guest-payment-proofs", `${guestId}/comprobante.${ext}`, data.paymentProof)
-            .then((path) =>
-              supabase.from("guests").update({ payment_proof_url: path }).eq("id", guestId)
-            )
-            .then(() => undefined)
+            .then((path) => updateGuestUrl(guestId, "payment_proof_url", path))
         );
       }
 
