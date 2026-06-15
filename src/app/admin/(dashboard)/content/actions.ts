@@ -10,4 +10,5 @@ export async function updateContent(id: string, formData: FormData) {
   const supabase = await createClient()
   await supabase.from('site_content').update({ value_es, value_en }).eq('id', id)
   revalidatePath('/admin/content')
+  revalidatePath('/')
 }

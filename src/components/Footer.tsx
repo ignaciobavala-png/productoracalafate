@@ -3,8 +3,13 @@
 import Link from "next/link";
 import { useOnboardingStore } from "@/store/onboarding-store";
 import { t } from "@/lib/onboarding-text";
-export function Footer() {
+import type { SectionContent } from "@/app/page";
+
+export function Footer({ content }: { content?: SectionContent }) {
   const language = useOnboardingStore((s) => s.language);
+
+  const tc = (key: string, fallback: string) =>
+    content?.[key]?.[language] ?? fallback;
 
   return (
     <footer className="border-t border-hairline/60">
@@ -18,7 +23,7 @@ export function Footer() {
               Productora Calafate
             </Link>
             <p className="mt-4 text-sm text-black font-normal leading-relaxed max-w-xs text-justify">
-              {t("footer.description", language)}
+              {tc("description", t("footer.description", language))}
             </p>
           </div>
 
@@ -47,7 +52,7 @@ export function Footer() {
 
         <div className="mt-16 pt-8 border-t border-hairline/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-black">
           <p>&copy; {new Date().getFullYear()} Productora Calafate</p>
-          <p>{t("footer.design", language)}</p>
+          <p>{tc("design_credit", t("footer.design", language))}</p>
         </div>
       </div>
     </footer>

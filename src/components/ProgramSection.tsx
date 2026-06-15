@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useOnboardingStore } from "@/store/onboarding-store";
 import { t } from "@/lib/onboarding-text";
+import type { SectionContent } from "@/app/page";
 
 const DAYS = [
   { number: 1, labelKey: "day1label", subKey: "day1sub", agendaIds: ["1", "2"] },
@@ -11,9 +12,12 @@ const DAYS = [
   { number: 3, labelKey: "day3label", subKey: "day3sub", agendaIds: ["6", "7"] },
 ];
 
-export function ProgramSection() {
+export function ProgramSection({ content }: { content?: SectionContent }) {
   const ref = useRef<HTMLElement>(null);
   const language = useOnboardingStore((s) => s.language);
+
+  const tc = (key: string, fallback: string) =>
+    content?.[key]?.[language] ?? fallback;
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start end", "start center"],
@@ -34,19 +38,19 @@ export function ProgramSection() {
           className="mb-16 md:mb-24"
         >
           <span className="text-xs uppercase tracking-[0.25em] text-primary">
-            {t("program.label", language)}
+            {tc("label", t("program.label", language))}
           </span>
           <h2 className="mt-4 text-3xl md:text-4xl lg:text-5xl font-normal tracking-[-0.02em] text-black">
-            {t("program.title", language)}
+            {tc("title", t("program.title", language))}
           </h2>
           <p className="mt-6 text-base md:text-lg text-black leading-relaxed font-normal max-w-xl text-justify">
-            {t("program.description", language)}
+            {tc("description", t("program.description", language))}
           </p>
         </motion.div>
 
         <div className="space-y-24 md:space-y-32">
           {DAYS.map((day) => (
-            <DayBlock key={day.number} day={day} language={language} />
+            <DayBlock key={day.number} day={day} language={language} content={content} />
           ))}
         </div>
       </div>
@@ -57,10 +61,14 @@ export function ProgramSection() {
 function DayBlock({
   day,
   language,
+  content,
 }: {
   day: (typeof DAYS)[number];
   language: "es" | "en";
+  content?: SectionContent;
 }) {
+  const tc = (key: string, fallback: string) =>
+    content?.[key]?.[language] ?? fallback;
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -76,10 +84,10 @@ function DayBlock({
         <motion.div style={{ opacity: labelOpacity }}>
           <div className="md:sticky md:top-24">
             <span className="text-xs uppercase tracking-[0.25em] text-primary">
-              {t(`program.${day.labelKey}`, language)}
+              {tc(day.labelKey, t(`program.${day.labelKey}`, language))}
             </span>
             <h3 className="mt-2 text-2xl md:text-3xl font-normal tracking-[-0.02em] text-black">
-              {t(`program.${day.subKey}`, language)}
+              {tc(day.subKey, t(`program.${day.subKey}`, language))}
             </h3>
           </div>
         </motion.div>
@@ -108,10 +116,10 @@ function DayBlock({
                 <div className="absolute left-[-1.625rem] md:left-[-1.75rem] top-1.5 w-2.5 h-2.5 bg-primary/40 ring-4 ring-canvas" />
 
                 <h4 className="text-xl md:text-2xl font-normal tracking-[-0.02em] text-black">
-                  {t(`program.agenda.item${id}.title`, language)}
+                  {tc(`item${id}_title`, t(`program.agenda.item${id}.title`, language))}
                 </h4>
                 <p className="mt-3 text-base md:text-lg text-black leading-relaxed font-normal max-w-2xl text-justify">
-                  {t(`program.agenda.item${id}.desc`, language)}
+                  {tc(`item${id}_desc`, t(`program.agenda.item${id}.desc`, language))}
                 </p>
               </motion.div>
             ))}

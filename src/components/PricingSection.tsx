@@ -5,10 +5,29 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { useOnboardingStore } from "@/store/onboarding-store";
 import { t } from "@/lib/onboarding-text";
 import { pricing } from "@/lib/mock-data";
+import type { SectionContent } from "@/app/page";
 
-export function PricingSection() {
+export function PricingSection({ content }: { content?: SectionContent }) {
   const ref = useRef<HTMLElement>(null);
   const language = useOnboardingStore((s) => s.language);
+
+  const tc = (key: string, fallback: string) =>
+    content?.[key]?.[language] ?? fallback;
+
+  const includes = content
+    ? [1, 2, 3, 4, 5, 6, 7]
+        .map((i) => content[`includes_${i}`]?.[language])
+        .filter(Boolean) as string[]
+    : pricing.includes;
+
+  const excludes = content
+    ? [1, 2, 3, 4]
+        .map((i) => content[`excludes_${i}`]?.[language])
+        .filter(Boolean) as string[]
+    : pricing.excludes;
+
+  const price = tc("price", pricing.price);
+  const currency = tc("currency", pricing.currency);
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start end", "start center"],
@@ -29,13 +48,13 @@ export function PricingSection() {
           className="mb-16 md:mb-24"
         >
           <span className="text-xs uppercase tracking-[0.25em] text-primary">
-            {t("pricing.label", language)}
+            {tc("label", t("pricing.label", language))}
           </span>
           <h2 className="mt-4 text-3xl md:text-4xl lg:text-5xl font-normal tracking-[-0.02em] text-black">
-            {t("pricing.title", language)}
+            {tc("title", t("pricing.title", language))}
           </h2>
           <p className="mt-6 text-base md:text-lg text-black leading-relaxed font-normal max-w-xl text-justify">
-            {t("pricing.description", language)}
+            {tc("description", t("pricing.description", language))}
           </p>
         </motion.div>
 
@@ -43,10 +62,10 @@ export function PricingSection() {
           <div className="space-y-10">
             <div>
               <h3 className="text-sm uppercase tracking-[0.15em] text-black font-normal mb-5">
-                {t("pricing.includesLabel", language)}
+                {tc("includesLabel", t("pricing.includesLabel", language))}
               </h3>
               <ul className="space-y-3">
-                {pricing.includes.map((item, i) => (
+                {includes.map((item, i) => (
                   <motion.li
                     key={i}
                     initial={{ opacity: 0, x: -12 }}
@@ -66,10 +85,10 @@ export function PricingSection() {
 
             <div>
               <h3 className="text-sm uppercase tracking-[0.15em] text-black font-normal mb-5">
-                {t("pricing.excludesLabel", language)}
+                {tc("excludesLabel", t("pricing.excludesLabel", language))}
               </h3>
               <ul className="space-y-2">
-                {pricing.excludes.map((item, i) => (
+                {excludes.map((item, i) => (
                   <motion.li
                     key={i}
                     initial={{ opacity: 0, x: -12 }}
@@ -94,13 +113,13 @@ export function PricingSection() {
             className="bg-surface-soft p-8 md:p-10 h-fit lg:sticky lg:top-24"
           >
             <div className="text-xs uppercase tracking-[0.15em] text-black mb-3">
-              {t("pricing.priceLabel", language)}
+              {tc("priceLabel", t("pricing.priceLabel", language))}
             </div>
             <div className="text-4xl md:text-5xl font-normal tracking-[-0.02em] text-black">
-              {pricing.currency} ${pricing.price}
+              {currency} ${price}
             </div>
             <p className="mt-4 text-xs text-black/60 leading-relaxed">
-              {t("pricing.note", language)}
+              {tc("note", t("pricing.note", language))}
             </p>
           </motion.div>
         </div>

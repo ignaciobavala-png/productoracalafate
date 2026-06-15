@@ -4,10 +4,14 @@ import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useOnboardingStore } from "@/store/onboarding-store";
 import { t } from "@/lib/onboarding-text";
+import type { SectionContent } from "@/app/page";
 
-export function ManifestoSection() {
+export function ManifestoSection({ content }: { content?: SectionContent }) {
   const ref = useRef<HTMLElement>(null);
   const language = useOnboardingStore((s) => s.language);
+
+  const tc = (key: string, fallback: string) =>
+    content?.[key]?.[language] ?? fallback;
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start end", "center center"],
@@ -29,16 +33,16 @@ export function ManifestoSection() {
         >
           <div>
             <span className="text-xs uppercase tracking-[0.25em] text-primary">
-              {t("manifesto.label", language)}
+              {tc("label", t("manifesto.label", language))}
             </span>
 
             <h2 className="mt-4 text-3xl md:text-4xl lg:text-5xl font-normal tracking-[-0.02em] leading-tight text-black">
-              {t("manifesto.title", language)}
+              {tc("title", t("manifesto.title", language))}
             </h2>
 
             <div className="mt-10 md:mt-14 space-y-6 text-base md:text-lg text-black leading-relaxed font-normal max-w-xl text-justify">
-              <p>{t("manifesto.p1", language)}</p>
-              <p>{t("manifesto.p2", language)}</p>
+              <p>{tc("p1", t("manifesto.p1", language))}</p>
+              <p>{tc("p2", t("manifesto.p2", language))}</p>
             </div>
           </div>
 

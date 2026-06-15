@@ -4,14 +4,19 @@ import { useRef } from "react";
 import { motion } from "framer-motion";
 import { useOnboardingStore } from "@/store/onboarding-store";
 import { t } from "@/lib/onboarding-text";
+import type { SectionContent } from "@/app/page";
 
 interface HeroSectionProps {
   videoSrc?: string;
+  content?: SectionContent;
 }
 
-export function HeroSection({ videoSrc }: HeroSectionProps) {
+export function HeroSection({ videoSrc, content }: HeroSectionProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const language = useOnboardingStore((s) => s.language);
+
+  const tc = (key: string, fallback: string) =>
+    content?.[key]?.[language] ?? fallback;
 
   return (
     <section
@@ -43,22 +48,22 @@ export function HeroSection({ videoSrc }: HeroSectionProps) {
           transition={{ duration: 1, ease: [0.25, 0.1, 0.25, 1] }}
         >
           <span className="text-xs md:text-sm uppercase tracking-[0.3em] text-on-dark-soft">
-            {t("hero.location", language)}
+            {tc("location", t("hero.location", language))}
           </span>
 
           <h1 className="mt-6 text-5xl sm:text-6xl md:text-7xl lg:text-[88px] font-normal tracking-[-0.02em] leading-[1.02] text-canvas">
-            {t("hero.title", language)}
+            {tc("title", t("hero.title", language))}
             <br />
-            <span className="text-primary">{t("hero.subtitle", language)}</span>
+            <span className="text-primary">{tc("subtitle", t("hero.subtitle", language))}</span>
           </h1>
 
           <p className="mt-8 md:mt-10 text-base md:text-xl text-on-dark-soft leading-relaxed font-normal max-w-xl mx-auto">
-            {t("hero.tagline", language)}
+            {tc("tagline", t("hero.tagline", language))}
           </p>
 
           <div className="mt-10 md:mt-14">
             <span className="text-sm text-on-dark-soft/70">
-              {t("hero.date", language)}
+              {tc("date", t("hero.date", language))}
             </span>
           </div>
         </motion.div>
