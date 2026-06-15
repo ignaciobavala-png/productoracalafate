@@ -1,51 +1,65 @@
 # Torres del Paine Summit 2026 — Productora Calafate
 
-Sitio web para el evento exclusivo en la Patagonia chilena. Landing page editorial con formulario de inscripcion real, diseno bilingue ES/EN.
+Plataforma privada de registro para evento exclusivo en la Patagonia chilena. Landing page editorial bilingüe ES/EN con puerta de código de invitación, formulario de inscripción real y panel de administración completo.
 
 ## Stack
 
-Next.js 16 (App Router) · React 19 · Tailwind CSS v4 · Framer Motion v12 · Zustand v5 · TypeScript strict · pnpm
+Next.js 16.2.9 (App Router) · React 19 · Tailwind CSS v4 · Framer Motion v12 · Zustand v5 · Supabase (Auth + DB + Storage) · TypeScript strict · pnpm
 
-## Quick start
+## Setup local
 
 ```bash
+cp .env.example .env.local
+# completar las variables con los valores de Supabase
 pnpm install
 pnpm dev        # http://localhost:3000
-pnpm build      # build de produccion
-pnpm lint       # ESLint
 ```
 
-## Estructura
+## Variables de entorno
+
+| Variable | Descripción |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | URL del proyecto Supabase |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Anon key (público, cliente browser) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role key (solo server — no exponer al cliente) |
+
+## Flujo principal
 
 ```
-src/
-├── app/            # layout + page + globals.css
-├── components/     # 17 componentes (5 secciones + navbar/footer + onboarding)
-├── lib/            # mock-data, onboarding-text (i18n)
-├── store/          # Zustand (onboarding, invitation)
-└── types/          # Interfaces TypeScript
+Homepage → "Solicitar Invitación" → modal código+email
+  → código válido → formulario 4 pasos (personal, documentos, pago, confirmar)
+  → submit → guests + companions en DB + fotos en Storage
+  → admin recibe registro en /admin/guests
 ```
 
-## Documentacion
+## Admin panel
 
-Documentacion completa en [`docs/`](./docs/):
+Ruta: `/admin` (link discreto en footer → "acceso")
+
+| Sección | Función |
+|---|---|
+| Registros | Listado de inscriptos, detalle con fotos y comprobante |
+| Invitaciones | Generar/eliminar códigos, ver quién entró pero no completó |
+| Contenido | Editar textos del sitio + subir video hero e imágenes |
+| Métodos de pago | Activar/desactivar métodos, editar datos bancarios |
+| Cuenta | Cambiar email y contraseña del admin |
+
+## Documentación
 
 | Documento | Contenido |
 |---|---|
-| [docs/architecture.md](./docs/architecture.md) | Stack, estructura, arbol de componentes, data flow |
-| [docs/components.md](./docs/components.md) | Catalogo de 17 componentes |
-| [docs/onboarding.md](./docs/onboarding.md) | Flujo de registro (4 pasos, store, dieta, pagos) |
-| [docs/design.md](./docs/design.md) | Sistema de diseno (tokens, tipografia, paleta glaciar) |
-| [docs/i18n.md](./docs/i18n.md) | Sistema bilingue ES/EN |
-| [docs/development.md](./docs/development.md) | Setup, convenciones, plan Supabase |
+| [docs/architecture.md](./docs/architecture.md) | Stack, estructura, flujo de datos, admin |
+| [docs/onboarding.md](./docs/onboarding.md) | Flujo de registro (4 pasos, store, pagos, Supabase) |
+| [docs/development.md](./docs/development.md) | Convenciones, Supabase, gotchas críticos, pendientes |
 | [docs/deployment.md](./docs/deployment.md) | Deploy en Vercel |
+| [docs/design.md](./docs/design.md) | Sistema de diseño (tokens, tipografía, paleta glaciar) |
+| [docs/i18n.md](./docs/i18n.md) | Sistema bilingüe ES/EN |
 | [docs/CHANGELOG.md](./docs/CHANGELOG.md) | Historial de cambios |
 
-## Estado
+## Estado actual
 
-- Build: compila sin errores (0 TS errors, 0 warnings)
-- Video hero: Pexels placeholder (Patagonia drone, 1080p)
-- Onboarding: formulario completo con submit simulado
-- i18n: ~280 claves ES/EN
-- Supabase: pendiente de integracion
-- Imagenes: placeholders pendientes de reemplazo
+- Supabase: 7 tablas, 4 buckets, auth, RLS configurado
+- Admin: login + dashboard completo (5 secciones)
+- Registro: flujo completo funcional con Supabase
+- Video hero: subir desde `/admin/content` → "Video hero" (formato MP4 H.264)
+- Deploy: pendiente conectar repo a Vercel

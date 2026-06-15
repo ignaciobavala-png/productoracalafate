@@ -14,16 +14,16 @@ La aplicacion esta construida sobre Next.js y se despliega de forma nativa en Ve
 
 ### Variables de entorno requeridas
 
-| Variable | Descripcion | Estado |
-|---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | URL del proyecto Supabase | Pendiente |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Key anonima/publica de Supabase | Pendiente |
+| Variable | Descripcion |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | URL del proyecto Supabase |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Key anonima/publica de Supabase |
+| `SUPABASE_SERVICE_ROLE_KEY` | Key de servicio para Server Actions (admin) |
 
-### Variables de entorno opcionales (futuro)
+### Variables de entorno opcionales
 
 | Variable | Descripcion |
 |---|---|
-| `SUPABASE_SERVICE_ROLE_KEY` | Key de servicio para Server Actions |
 | `NEXT_PUBLIC_SITE_URL` | URL de produccion (para emails, metadata) |
 
 ## Dominio

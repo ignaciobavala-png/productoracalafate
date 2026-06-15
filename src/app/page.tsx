@@ -24,9 +24,7 @@ export default async function Home() {
     contentMap[row.section][row.key] = { es: row.value_es, en: row.value_en };
   }
 
-  const heroVideoUrl =
-    assets?.find((a) => a.key === "hero_video")?.url ??
-    "https://videos.pexels.com/video-files/30772480/13162589_1920_1080_60fps.mp4";
+  const heroVideoUrl = assets?.find((a) => a.key === "hero_video")?.url || undefined;
 
   return (
     <>

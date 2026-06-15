@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useOnboardingStore } from "@/store/onboarding-store";
 import { t } from "@/lib/onboarding-text";
@@ -13,6 +13,7 @@ interface HeroSectionProps {
 
 export function HeroSection({ videoSrc, content }: HeroSectionProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [videoFailed, setVideoFailed] = useState(false);
   const language = useOnboardingStore((s) => s.language);
 
   const tc = (key: string, fallback: string) =>
@@ -24,13 +25,14 @@ export function HeroSection({ videoSrc, content }: HeroSectionProps) {
       className="relative min-h-screen flex items-center justify-center overflow-hidden"
     >
       <div className="absolute inset-0 z-0">
-        {videoSrc ? (
+        {videoSrc && !videoFailed ? (
           <video
             ref={videoRef}
             autoPlay
             muted
             loop
             playsInline
+            onError={() => setVideoFailed(true)}
             className="absolute inset-0 w-full h-full object-cover"
           >
             <source src={videoSrc} type="video/mp4" />

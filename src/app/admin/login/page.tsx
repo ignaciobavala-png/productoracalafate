@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { loginAction } from './actions'
 
 interface Props {
@@ -11,6 +12,9 @@ export default async function LoginPage({ searchParams }: Props) {
     <div className="min-h-screen bg-[#f7f7f7] flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="mb-10">
+          <Link href="/" className="text-xs text-black/30 hover:text-black/60 transition-colors mb-6 inline-block">
+            ← Volver al sitio
+          </Link>
           <p className="text-xs tracking-[0.25em] text-black/30 uppercase mb-2">
             Torres del Paine Summit 2026
           </p>
