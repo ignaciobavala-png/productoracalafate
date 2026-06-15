@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useOnboardingStore } from "@/store/onboarding-store";
 import { useInvitationStore } from "@/store/invitation-store";
 import { t } from "@/lib/onboarding-text";
+import { CARD_PAYMENT_METHODS } from "@/lib/mock-data";
 import { StepIndicator } from "@/components/onboarding/StepIndicator";
 import { StepPersonal } from "@/components/onboarding/StepPersonal";
 import { StepDocuments } from "@/components/onboarding/StepDocuments";
@@ -151,7 +152,14 @@ export function OnboardingPage() {
   const nextStep = useOnboardingStore((s) => s.nextStep);
   const prevStep = useOnboardingStore((s) => s.prevStep);
   const acceptedTerms = useOnboardingStore((s) => s.data.acceptedTerms);
+  const paymentMethod = useOnboardingStore((s) => s.data.paymentMethod);
+  const paymentProof = useOnboardingStore((s) => s.data.paymentProof);
   const isUnlocked = useInvitationStore((s) => s.isUnlocked);
+
+  const isStep3Ready =
+    !!paymentMethod &&
+    !!acceptedTerms &&
+    (CARD_PAYMENT_METHODS.includes(paymentMethod) || !!paymentProof);
 
   if (!isUnlocked) {
     return <InvitationGate />;
@@ -228,7 +236,7 @@ export function OnboardingPage() {
             <button
               type="button"
               onClick={nextStep}
-              disabled={step === 3 && !acceptedTerms}
+              disabled={step === 3 && !isStep3Ready}
               className="text-xs uppercase tracking-[0.12em] text-black hover:text-primary transition-colors duration-300 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1.5"
             >
               {t("shared.next", language)}

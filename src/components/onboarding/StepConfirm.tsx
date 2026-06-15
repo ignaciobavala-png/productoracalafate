@@ -76,6 +76,10 @@ export function StepConfirm() {
             value={data.needsInvoice ? t("stepConfirm.needsInvoice", language) : t("stepConfirm.noInvoice", language)}
           />
           <Row label={t("stepConfirm.paymentMethod", language)} value={methodName} />
+          <Row
+            label={language === "es" ? "Comprobante" : "Payment proof"}
+            value={data.paymentProof ? data.paymentProof.name : (language === "es" ? "No aplica" : "Not required")}
+          />
         </dl>
       </div>
 

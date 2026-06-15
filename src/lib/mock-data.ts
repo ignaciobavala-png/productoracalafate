@@ -29,6 +29,8 @@ export const pricing: PricingInfo = {
   ],
 };
 
+export const CARD_PAYMENT_METHODS = ['card-cl', 'card-intl'];
+
 export const paymentMethods: PaymentMethod[] = [
   {
     id: "transfer-clp",

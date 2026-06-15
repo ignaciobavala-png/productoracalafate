@@ -17,7 +17,7 @@ export default async function GuestsPage() {
 
   const { data: guests } = await supabase
     .from('guests')
-    .select('id, full_name, email, nationality, status, submitted_at, payment_method_id, is_coming_alone')
+    .select('id, full_name, email, nationality, status, submitted_at, payment_method_id, is_coming_alone, payment_proof_url')
     .order('submitted_at', { ascending: false })
 
   const counts = {
@@ -54,6 +54,7 @@ export default async function GuestsPage() {
                 <th className="text-left px-4 py-3 text-black/40 font-normal">Pago</th>
                 <th className="text-left px-4 py-3 text-black/40 font-normal">Acompañante</th>
                 <th className="text-left px-4 py-3 text-black/40 font-normal">Fecha</th>
+                <th className="text-left px-4 py-3 text-black/40 font-normal">Comprobante</th>
                 <th className="text-left px-4 py-3 text-black/40 font-normal">Estado</th>
               </tr>
             </thead>
@@ -74,6 +75,21 @@ export default async function GuestsPage() {
                   <td className="px-4 py-3 text-black/50">{guest.is_coming_alone ? 'No' : 'Sí'}</td>
                   <td className="px-4 py-3 text-black/40 text-xs">
                     {new Date(guest.submitted_at).toLocaleDateString('es-CL')}
+                  </td>
+                  <td className="px-4 py-3">
+                    {guest.payment_proof_url ? (
+                      <a
+                        href={`/admin/guests/${guest.id}`}
+                        className="inline-flex items-center gap-1 text-xs text-green-700 hover:text-green-900 transition-colors"
+                      >
+                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <path d="M1.5 5l2.5 2.5 4.5-4.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        Ver
+                      </a>
+                    ) : (
+                      <span className="text-xs text-black/20">—</span>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <span className={`inline-block px-2 py-0.5 rounded text-xs ${STATUS_COLOR[guest.status]}`}>
