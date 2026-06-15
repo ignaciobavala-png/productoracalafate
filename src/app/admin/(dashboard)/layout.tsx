@@ -20,6 +20,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { href: '/admin/invitations', label: 'Invitaciones', badge: unusedCodes ?? 0 },
     { href: '/admin/content',     label: 'Contenido' },
     { href: '/admin/settings',    label: 'Métodos de pago' },
+    { href: '/admin/account',     label: 'Cuenta' },
   ]
 
   return (
