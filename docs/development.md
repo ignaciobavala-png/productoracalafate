@@ -73,25 +73,59 @@ import { t } from "@/lib/onboarding-text";
 import type { NavLink } from "@/types";
 ```
 
-## Plan de integracion Supabase
+## Supabase (funcionando)
 
-### Pendiente
+### Stack actual
 
-1. **Variables de entorno:** `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
-2. **Cliente SSR:** Configurar `@supabase/ssr` en `src/lib/supabase/`.
-3. **Schema:** Crear tablas `guests`, `companions`, `invitations`, `submissions`.
-4. **RLS:** Politicas de acceso para insercion anonima.
-5. **Storage:** Bucket para `id_photos` y `profile_photos`. Politicas public-read.
-6. **Migraciones:** Archivos SQL en `supabase/migrations/`.
-7. **Reemplazar submit simulado:** `onboarding-store.ts` → insert real en Supabase.
-8. **Reemplazar invitation submit:** `InvitationModal` → verificar codigo contra tabla `invitations`.
-9. **Edge Functions (opcional):** Email de confirmacion al submit exitoso.
+| Modulo | Archivo | Rol |
+|---|---|---|
+| Cliente browser | `src/lib/supabase/client.ts` | Inserción de guests, subida de archivos |
+| Cliente server | `src/lib/supabase/server.ts` | SSR para admin (getUser, fetch data) |
+| Cliente admin | `src/lib/supabase/admin.ts` | Service role key para validar/consumir invitaciones |
+| Middleware sesión | `src/lib/supabase/middleware.ts` | Refresh session + proteger admin |
+| Server actions | `src/app/actions/validate-invitation.ts` | Validar código vs `invitations` |
+| Server actions | `src/app/actions/consume-invitation.ts` | Marcar código como usado |
+| Server actions | `src/app/actions/log-invitation-request.ts` | Log de intentos fallidos |
 
-### Estructura propuesta para cliente Supabase
+### Tablas en Supabase
 
-```
-src/lib/supabase/
-├── client.ts       # Cliente browser (client components)
-├── server.ts       # Cliente server (server components, Server Actions)
-└── middleware.ts    # Middleware de sesion (opcional, sin auth por ahora)
-```
+| Tabla | Uso |
+|---|---|
+| `guests` | Datos del registrado + `invitation_code`, fotos, status (pending/confirmed/rejected) |
+| `companions` | Acompañante (FK a guests) |
+| `invitations` | Códigos generados desde admin, con `used_by` y `used_at` |
+| `invitation_requests` | Log de intentos de código (email + code_entered) |
+| `payment_methods` | Métodos de pago (6 registros) |
+| `site_content` | Texto bilingüe editable desde admin |
+| `site_assets` | URLs de video hero e imágenes |
+
+### Buckets de Storage
+
+| Bucket | Uso | Visibilidad |
+|---|---|---|
+| `guest-id-photos` | Foto de documento | Privado (signed URLs) |
+| `guest-profile-photos` | Foto de perfil | Privado (signed URLs) |
+| `guest-payment-proofs` | Comprobante de pago | Privado (signed URLs) |
+| `site-assets` | Video hero + imágenes del sitio | Público |
+
+## Admin panel
+
+- Ruta: `/admin` (protegida por `src/proxy.ts` — Next.js 16 renombró middleware.ts)
+- Login: email + password via `supabase.auth.signInWithPassword()`
+- Secciones: Registros, Invitaciones, Contenido, Métodos de pago, Cuenta
+- Para acceder: crear usuario en Supabase Auth > Users
+
+### Nota sobre RLS y admin client
+
+Toda operación de escritura sobre `guests` desde el lado del cliente usa `createAdminClient()` (service_role key). El cliente anon no tiene política UPDATE en la tabla `guests` — si se intenta una actualización con el cliente anon, Supabase la bloquea silenciosamente (sin error). Siempre usar Server Actions con `createAdminClient()` para updates de guests.
+
+## Pendiente para producción
+
+1. **Email transaccional:** Enviar confirmación al guest al completar registro. Con Gmail directo (sin Resend). Edge Function o nodemailer via Server Action.
+2. **Rate limiting / CAPTCHA:** Proteger el endpoint de registro público.
+3. **Video hero:** Subir video final a Supabase Storage `site-assets` desde `/admin/content`.
+4. **Imágenes:** Subir foto de manifiesto y logo definitivos desde `/admin/content`.
+5. **SEO:** Meta tags, Open Graph, sitemap.
+6. **Deploy Vercel:** Variables de entorno `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+7. **Cron (opcional):** Limpiar `invitation_requests` viejos.
+8. **GitHub:** Crear repo + conectar a Vercel para deploys automáticos.

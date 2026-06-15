@@ -53,9 +53,8 @@ export default async function SettingsPage() {
                 </div>
               </summary>
 
-              <div className="border-t border-black/10 divide-y divide-black/5">
-                {/* Datos editables */}
-                <form action={saveDetails} className="p-4 space-y-3">
+              <div className="border-t border-black/10 p-4 space-y-3">
+                <form id={`save-${m.id}`} action={saveDetails} className="space-y-3">
                   <div>
                     <label className="block text-xs text-black/40 mb-1">Etiqueta</label>
                     <input
@@ -75,27 +74,28 @@ export default async function SettingsPage() {
                       className="w-full bg-[#f7f7f7] border border-black/10 rounded px-3 py-2 text-sm text-black font-mono focus:outline-none focus:border-black/25 resize-none"
                     />
                   </div>
-                  <div className="flex items-center justify-between">
+                </form>
+                <div className="flex items-center justify-between">
+                  <button
+                    type="submit"
+                    form={`save-${m.id}`}
+                    className="px-3 py-1.5 bg-black/8 text-black/70 text-xs rounded hover:bg-black/15 hover:text-black transition-colors"
+                  >
+                    Guardar cambios
+                  </button>
+                  <form action={m.is_active ? toggleOff : toggleOn}>
                     <button
                       type="submit"
-                      className="px-3 py-1.5 bg-black/8 text-black/70 text-xs rounded hover:bg-black/15 hover:text-black transition-colors"
+                      className={`text-xs px-3 py-1.5 rounded transition-colors ${
+                        m.is_active
+                          ? 'text-red-600/70 hover:text-red-700 hover:bg-red-50'
+                          : 'text-green-700/70 hover:text-green-800 hover:bg-green-50'
+                      }`}
                     >
-                      Guardar cambios
+                      {m.is_active ? 'Desactivar' : 'Activar'}
                     </button>
-                    <form action={m.is_active ? toggleOff : toggleOn}>
-                      <button
-                        type="submit"
-                        className={`text-xs px-3 py-1.5 rounded transition-colors ${
-                          m.is_active
-                            ? 'text-red-600/70 hover:text-red-700 hover:bg-red-50'
-                            : 'text-green-700/70 hover:text-green-800 hover:bg-green-50'
-                        }`}
-                      >
-                        {m.is_active ? 'Desactivar' : 'Activar'}
-                      </button>
-                    </form>
-                  </div>
-                </form>
+                  </form>
+                </div>
               </div>
             </details>
           )

@@ -82,42 +82,60 @@ Si restriction !== "Ninguna":
 
 ## Metodos de pago
 
-6 metodos definidos en `mock-data.ts`:
+6 metodos en `mock-data.ts` (editables desde `/admin/settings`). Se dividen en dos tipos con UX diferente:
 
-| ID | Label | Moneda | Detalles |
-|---|---|---|---|
-| `transfer-clp` | Transferencia Chile (Pesos) | CLP | Bice CC 12-02013-9 |
-| `transfer-usd` | Transferencia Chile (Dolares) | USD | Bice CC 013-12-04076-6 |
-| `transfer-us` | Transferencia EEUU | USD | Community Federal Savings Bank |
-| `global66` | Global66 | USD | Link de pago |
-| `credit-cl` | Tarjeta Chile | CLP | Link de pago |
-| `credit-intl` | Tarjeta Internacional | USD | Link de pago |
+**Transferencias** — muestran datos bancarios con botones de copia y requieren comprobante:
+
+| ID | Label | Moneda |
+|---|---|---|
+| `transfer-clp` | Transferencia Chile (Pesos) | CLP |
+| `transfer-usd` | Transferencia Chile (Dólares) | USD |
+| `transfer-us` | Transferencia EEUU | USD |
+| `global66` | Global66 | USD |
+
+**Tarjetas** (`CARD_PAYMENT_METHODS` en `mock-data.ts`) — muestran info box, sin dropzone:
+
+| ID | Label | Moneda |
+|---|---|---|
+| `card-cl` | Tarjeta Chile | CLP |
+| `card-intl` | Tarjeta Internacional | USD |
+
+### Comprobante de pago
+
+- Solo requerido para métodos de transferencia.
+- `ProofDropzone` en `StepPayment` — ícono upload en vacío, checkmark verde con archivo.
+- `isStep3Ready = !!paymentMethod && !!acceptedTerms && (esCard || !!paymentProof)`
+- El botón "Siguiente" en paso 3 queda deshabilitado si es transferencia sin comprobante.
 
 ## Dropzones (StepDocuments)
 
-Dos dropzones para archivos:
-- **ID Photo:** Foto del documento de identidad.
-- **Profile Photo:** Foto de perfil del huesped.
+Tres dropzones para archivos (upload real a Supabase Storage):
+- **ID Photo:** Foto del documento de identidad → bucket `guest-id-photos`
+- **Profile Photo:** Foto de perfil del huesped → bucket `guest-profile-photos`
+- **Payment Proof:** Comprobante de pago (en StepPayment) → bucket `guest-payment-proofs`
 
-Implementacion actual: simulacion de drag & drop visual. Sin upload real a storage. Pendiente integrar con Supabase Storage + compresion client-side.
+Upload en `onboarding-store.submit()` via `uploadFile()` de `storage.ts`. Los campos `_url` en la tabla `guests` se actualizan con `updateGuestUrl()` Server Action que usa `createAdminClient()` para bypassear la política RLS.
 
-## Submit
+## Submit (real con Supabase)
 
-Actualmente simulado:
-```typescript
-submit: async () => {
-  set({ isSubmitting: true });
-  await new Promise((r) => setTimeout(r, 2000));
-  set({ isSubmitting: false, isSubmitted: true });
-},
-```
+El submit en `onboarding-store.ts`:
 
-Pendiente: insert en tabla Supabase con los datos del formulario + upload de archivos.
+1. Obtiene el código validado de `useInvitationStore.getState().validatedCode`
+2. Inserta en `guests` (incluye `invitation_code`)
+3. Llama `consumeInvitationCode(code, guestId)` para marcar `used_by` y `used_at` en `invitations`
+4. Sube fotos a Supabase Storage y llama `updateGuestUrl(guestId, field, url)` para cada una
+   - `updateGuestUrl` usa `createAdminClient()` — el cliente anon no tiene UPDATE policy en `guests`
+5. Inserta `companions` si corresponde
+6. Muestra `SuccessScreen`
+
+### Invitación gate
+
+El formulario está protegido por `InvitationGate` (inline en `OnboardingPage.tsx`). Sin código válido no se renderiza el wizard. La validación va contra `invitations` via server action `validate-invitation.ts`.
 
 ## Navegacion entre pasos
 
 - **Back:** Visible desde paso 2. Llama `prevStep()`.
-- **Next:** Visible en pasos 1-3. En paso 3 se deshabilita si `!acceptedTerms`.
+- **Next:** Visible en pasos 1-3. En paso 3 se deshabilita si `!isStep3Ready` (requiere método + términos + comprobante si es transferencia).
 - **Submit:** En paso 4, reemplaza el boton Next. Ejecuta `submit()`.
 
 ## Terminos y condiciones

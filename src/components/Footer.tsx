@@ -52,7 +52,15 @@ export function Footer({ content }: { content?: SectionContent }) {
 
         <div className="mt-16 pt-8 border-t border-hairline/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-black">
           <p>&copy; {new Date().getFullYear()} Productora Calafate</p>
-          <p>{tc("design_credit", t("footer.design", language))}</p>
+          <div className="flex items-center gap-4">
+            <p>{tc("design_credit", t("footer.design", language))}</p>
+            <Link
+              href="/admin"
+              className="text-black/25 hover:text-black/50 transition-colors duration-200"
+            >
+              acceso
+            </Link>
+          </div>
         </div>
       </div>
     </footer>
