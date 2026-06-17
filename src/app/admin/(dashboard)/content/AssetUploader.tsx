@@ -10,6 +10,7 @@ interface Props {
   currentUrl: string
   type: 'video' | 'image'
   label: string
+  compact?: boolean
 }
 
 interface SizeInfo {
@@ -17,7 +18,7 @@ interface SizeInfo {
   compressed: number
 }
 
-export function AssetUploader({ assetKey, assetId, currentUrl, type, label }: Props) {
+export function AssetUploader({ assetKey, assetId, currentUrl, type, label, compact }: Props) {
   const [uploading, setUploading] = useState(false)
   const [url, setUrl] = useState(currentUrl)
   const [error, setError] = useState<string | null>(null)
@@ -65,6 +66,50 @@ export function AssetUploader({ assetKey, assetId, currentUrl, type, label }: Pr
     }
   }
 
+  const fileInput = (
+    <input
+      ref={inputRef}
+      type="file"
+      accept={accept}
+      className="hidden"
+      onChange={(e) => {
+        const f = e.target.files?.[0]
+        if (f) handleFile(f)
+        e.target.value = ''
+      }}
+    />
+  )
+
+  if (compact) {
+    return (
+      <div className="space-y-1.5">
+        {url ? (
+          <img src={url} alt={label} className="w-full aspect-video object-cover rounded border border-black/10" />
+        ) : (
+          <div className="w-full aspect-video bg-black/[0.03] rounded border border-dashed border-black/15 flex items-center justify-center">
+            <span className="text-[10px] text-black/20">Sin foto</span>
+          </div>
+        )}
+        {fileInput}
+        <button
+          type="button"
+          disabled={uploading}
+          onClick={() => inputRef.current?.click()}
+          className="w-full py-1.5 bg-black/8 text-black/60 text-xs rounded hover:bg-black/15 hover:text-black disabled:opacity-40 transition-colors"
+        >
+          {uploading ? 'Subiendo…' : url ? 'Cambiar' : 'Subir foto'}
+        </button>
+        <p className="text-[10px] text-black/30 truncate font-mono">{label}</p>
+        {sizeInfo && !uploading && (
+          <p className="text-[10px] text-emerald-600 font-mono">
+            {formatBytes(sizeInfo.original)} → {formatBytes(sizeInfo.compressed)}
+          </p>
+        )}
+        {error && <p className="text-[10px] text-red-400">{error}</p>}
+      </div>
+    )
+  }
+
   return (
     <div className="p-4 space-y-3">
       <div>
@@ -92,17 +137,7 @@ export function AssetUploader({ assetKey, assetId, currentUrl, type, label }: Pr
       )}
 
       <div className="flex items-center gap-3 flex-wrap">
-        <input
-          ref={inputRef}
-          type="file"
-          accept={accept}
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0]
-            if (f) handleFile(f)
-            e.target.value = ''
-          }}
-        />
+        {fileInput}
         <button
           type="button"
           disabled={uploading}

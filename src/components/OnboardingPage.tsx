@@ -67,10 +67,10 @@ function InvitationGate({ tripSlug, initialCode }: GateProps) {
   return (
     <section
       id="onboarding"
-      className="min-h-screen bg-surface-dark flex items-center py-24 md:py-32 px-6 md:px-8"
+      className="bg-surface-dark py-16 md:py-20 px-6 md:px-8"
     >
       <div className="max-w-[1200px] mx-auto w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
 
           {/* Columna izquierda — declaración de exclusividad */}
           <motion.div
@@ -85,12 +85,12 @@ function InvitationGate({ tripSlug, initialCode }: GateProps) {
             <h2 className="mt-5 text-3xl md:text-4xl lg:text-5xl font-normal tracking-[-0.02em] leading-tight text-canvas">
               {t("invitation.title", language)}
             </h2>
-            <p className="mt-6 text-base text-on-dark-soft leading-relaxed max-w-sm">
+            <p className="mt-4 text-sm text-on-dark-soft leading-relaxed max-w-sm">
               {t("invitation.description", language)}
             </p>
 
             {/* Divisor decorativo */}
-            <div className="mt-10 flex items-center gap-4">
+            <div className="mt-7 flex items-center gap-4">
               <div className="h-px bg-white/10 flex-1" />
               <span className="text-[10px] uppercase tracking-[0.3em] text-white/20">
                 {t("invitation.divider", language)}
@@ -98,7 +98,7 @@ function InvitationGate({ tripSlug, initialCode }: GateProps) {
               <div className="h-px bg-white/10 flex-1" />
             </div>
 
-            <p className="mt-8 text-xs text-white/20 leading-relaxed max-w-xs">
+            <p className="mt-5 text-xs text-white/20 leading-relaxed max-w-xs">
               {t("invitation.footer", language)}{" "}
               <a
                 href="mailto:calafatesummits@gmail.com"
@@ -194,15 +194,49 @@ export function OnboardingPage({ tripSlug, initialCode }: OnboardingPageProps) {
   const isSubmitted = useOnboardingStore((s) => s.isSubmitted);
   const nextStep = useOnboardingStore((s) => s.nextStep);
   const prevStep = useOnboardingStore((s) => s.prevStep);
-  const acceptedTerms = useOnboardingStore((s) => s.data.acceptedTerms);
-  const paymentMethod = useOnboardingStore((s) => s.data.paymentMethod);
-  const paymentProof = useOnboardingStore((s) => s.data.paymentProof);
+  const data = useOnboardingStore((s) => s.data);
   const isUnlocked = useInvitationStore((s) => s.isUnlocked);
 
+  const isStep1Ready = !!(
+    data.fullName?.trim() &&
+    data.nationality?.trim() &&
+    data.dateOfBirth?.trim() &&
+    data.email?.trim() &&
+    data.isComingAlone !== null &&
+    (data.isComingAlone !== false || (
+      data.companion?.fullName?.trim() &&
+      data.companion?.nationality?.trim() &&
+      data.companion?.dateOfBirth?.trim() &&
+      data.companion?.email?.trim()
+    ))
+  );
+
+  const isStep2Ready = !!(
+    data.idPhoto &&
+    data.profilePhoto &&
+    data.bio?.trim() &&
+    (data.dietaryRestrictions?.length ?? 0) > 0
+  );
+
   const isStep3Ready =
-    !!paymentMethod &&
-    !!acceptedTerms &&
-    (CARD_PAYMENT_METHODS.includes(paymentMethod) || !!paymentProof);
+    !!data.paymentMethod &&
+    !!data.acceptedTerms &&
+    (CARD_PAYMENT_METHODS.includes(data.paymentMethod) || !!data.paymentProof);
+
+  const stepReady = [true, isStep1Ready, isStep2Ready, isStep3Ready, true];
+  const isCurrentStepReady = stepReady[step] ?? true;
+
+  const STEP_HINTS: Record<number, string> = {
+    1: language === "es"
+      ? "Completa nombre, nacionalidad, fecha de nacimiento y email para continuar."
+      : "Fill in name, nationality, date of birth and email to continue.",
+    2: language === "es"
+      ? "Sube tu foto de documento, foto de perfil, y completa tu bio."
+      : "Upload your ID photo, profile photo, and complete your bio.",
+    3: language === "es"
+      ? "Selecciona un método de pago y acepta los términos."
+      : "Select a payment method and accept the terms.",
+  };
 
   if (!isUnlocked) {
     return <InvitationGate tripSlug={tripSlug} initialCode={initialCode} />;
@@ -276,17 +310,24 @@ export function OnboardingPage({ tripSlug, initialCode }: OnboardingPageProps) {
           </div>
 
           {step < 4 && (
-            <button
-              type="button"
-              onClick={nextStep}
-              disabled={step === 3 && !isStep3Ready}
-              className="text-xs uppercase tracking-[0.12em] text-black hover:text-primary transition-colors duration-300 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1.5"
-            >
-              {t("shared.next", language)}
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.2">
-                <path d="M4 2l3 3-3 3" />
-              </svg>
-            </button>
+            <div className="flex flex-col items-end gap-2">
+              {!isCurrentStepReady && STEP_HINTS[step] && (
+                <p className="text-[11px] text-black/40 text-right max-w-xs">
+                  {STEP_HINTS[step]}
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={nextStep}
+                disabled={!isCurrentStepReady}
+                className="text-xs uppercase tracking-[0.12em] text-black hover:text-primary transition-colors duration-300 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1.5"
+              >
+                {t("shared.next", language)}
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.2">
+                  <path d="M4 2l3 3-3 3" />
+                </svg>
+              </button>
+            </div>
           )}
         </div>
       </div>

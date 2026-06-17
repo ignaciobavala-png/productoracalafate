@@ -59,7 +59,7 @@ export function PricingSection({ content }: { content?: SectionContent }) {
                 <span className="text-sm text-black/35 mt-3 tracking-wide font-light">
                   {currency}
                 </span>
-                <span className="text-[4.5rem] sm:text-[5.5rem] md:text-[6.5rem] font-normal leading-none tracking-[-0.04em] text-black tabular-nums">
+                <span className="text-4xl md:text-5xl font-normal leading-none tracking-[-0.03em] text-black tabular-nums">
                   ${price}
                 </span>
               </div>

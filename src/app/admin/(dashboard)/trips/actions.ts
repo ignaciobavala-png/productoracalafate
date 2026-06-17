@@ -88,3 +88,21 @@ export async function toggleTripActive(id: string, is_active: boolean) {
   await supabase.from('trips').update({ is_active }).eq('id', id)
   revalidatePath('/admin/trips')
 }
+
+const TEMPLATE_TRIP_ID = '00000000-0000-0000-0000-000000000001'
+
+export async function deleteTrip(id: string) {
+  if (id === TEMPLATE_TRIP_ID) return
+
+  const supabase = await createClient()
+
+  // Tablas sin ON DELETE CASCADE — limpiar manualmente
+  await supabase.from('invitation_requests').delete().eq('trip_id', id)
+  await supabase.from('invitations').delete().eq('trip_id', id)
+  await supabase.from('guests').delete().eq('trip_id', id)
+
+  // site_content, site_assets, program_items tienen CASCADE y se borran solos
+  await supabase.from('trips').delete().eq('id', id)
+
+  revalidatePath('/admin/trips')
+}

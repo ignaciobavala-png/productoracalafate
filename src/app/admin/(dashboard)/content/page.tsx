@@ -3,15 +3,24 @@ import { updateContent } from './actions'
 import { AssetUploader } from './AssetUploader'
 import { ProgramAdmin } from './ProgramAdmin'
 
-const SECTION_ORDER = ['hero', 'manifesto', 'program', 'pricing', 'footer']
+// Orden de secciones en admin (coincide con homepage)
+const SECTION_ORDER = ['hero', 'manifesto', 'pricing', 'footer']
 
 const SECTION_LABELS: Record<string, string> = {
   hero:      'Hero — encabezado principal',
   manifesto: 'Manifiesto — sección editorial',
-  program:   'Programa — agenda de 3 días',
-  pricing:   'Precios — tarifa e incluidos',
+  pricing:   'Tarifa — precio e incluidos',
   footer:    'Footer — pie de página',
 }
+
+// Assets que van embebidos dentro de cada sección de texto
+const SECTION_ASSETS: Record<string, string[]> = {
+  hero:      ['hero_video'],
+  manifesto: ['manifesto_photo'],
+}
+
+// Claves de galería en orden
+const GALLERY_KEYS = Array.from({ length: 8 }, (_, i) => `gallery_${i + 1}`)
 
 export default async function ContentPage({
   searchParams,
@@ -57,6 +66,12 @@ export default async function ContentPage({
     bySection[row.section]!.push(row)
   }
 
+  // Lookup de assets por key
+  const assetByKey: Record<string, NonNullable<typeof assets>[0]> = {}
+  for (const a of assets ?? []) assetByKey[a.key] = a
+
+  const galleryAssets = GALLERY_KEYS.map((k) => assetByKey[k]).filter(Boolean)
+
   return (
     <div className="max-w-4xl">
       <h1 className="text-xl font-semibold mb-1">Contenido del sitio</h1>
@@ -94,35 +109,33 @@ export default async function ContentPage({
       ) : (
         <div className="space-y-2">
 
-          {/* ── Multimedia (assets) ─────────────────────────── */}
-          {assets && assets.length > 0 && (
+          {/* ── Galería — carrusel de fotos ──────────────────── */}
+          {galleryAssets.length > 0 && (
             <details className="group border border-black/10 rounded-lg overflow-hidden bg-white">
               <summary className="flex items-center justify-between px-4 py-3.5 cursor-pointer bg-black/[0.02] hover:bg-black/[0.04] transition-colors list-none">
                 <div className="flex items-center gap-3">
-                  <span className="text-xs font-mono text-black/20 w-4">0</span>
+                  <span className="text-xs font-mono text-black/20 w-4">G</span>
                   <div>
-                    <span className="text-sm font-medium">Multimedia</span>
-                    <span className="text-xs text-black/30 ml-2">— video hero y foto manifiesto</span>
+                    <span className="text-sm font-medium">Galería</span>
+                    <span className="text-xs text-black/30 ml-2">— {galleryAssets.length} fotos del carrusel</span>
                   </div>
                 </div>
                 <span className="text-black/30 text-xs group-open:rotate-180 transition-transform duration-200">▼</span>
               </summary>
-              <div className="divide-y divide-black/5 border-t border-black/10">
-                {assets.map((asset) => (
-                  <div key={asset.id}>
-                    <div className="px-4 pt-4">
-                      <p className="text-xs font-mono text-black/30">{asset.key}</p>
-                      {asset.label && <p className="text-sm text-black/60 mt-0.5">{asset.label}</p>}
-                    </div>
+              <div className="border-t border-black/10 p-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {galleryAssets.map((asset) => (
                     <AssetUploader
+                      key={asset.id}
                       assetKey={asset.key}
                       assetId={asset.id}
                       currentUrl={asset.url}
-                      type={asset.type as 'video' | 'image'}
+                      type="image"
                       label={asset.label ?? asset.key}
+                      compact
                     />
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </details>
           )}
@@ -136,10 +149,13 @@ export default async function ContentPage({
             />
           )}
 
-          {/* ── Secciones de texto ──────────────────────────── */}
+          {/* ── Secciones de texto + assets embebidos ──────── */}
           {SECTION_ORDER.map((section, idx) => {
             const sectionRows = bySection[section]
-            if (!sectionRows?.length) return null
+            const sectionAssetKeys = SECTION_ASSETS[section] ?? []
+            const sectionAssets = sectionAssetKeys.map((k) => assetByKey[k]).filter(Boolean)
+
+            if (!sectionRows?.length && !sectionAssets.length) return null
 
             return (
               <details
@@ -158,13 +174,33 @@ export default async function ContentPage({
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs text-black/20">{sectionRows.length} campos</span>
+                    <span className="text-xs text-black/20">
+                      {(sectionRows?.length ?? 0) + sectionAssets.length} campos
+                    </span>
                     <span className="text-black/30 text-xs group-open:rotate-180 transition-transform duration-200">▼</span>
                   </div>
                 </summary>
 
                 <div className="divide-y divide-black/5 border-t border-black/10">
-                  {sectionRows.map((row) => {
+                  {/* Assets embebidos (video/foto) al inicio de la sección */}
+                  {sectionAssets.map((asset) => (
+                    <div key={asset.id}>
+                      <div className="px-4 pt-4">
+                        <p className="text-xs font-mono text-black/30">{asset.key}</p>
+                        {asset.label && <p className="text-sm text-black/60 mt-0.5">{asset.label}</p>}
+                      </div>
+                      <AssetUploader
+                        assetKey={asset.key}
+                        assetId={asset.id}
+                        currentUrl={asset.url}
+                        type={asset.type as 'video' | 'image'}
+                        label={asset.label ?? asset.key}
+                      />
+                    </div>
+                  ))}
+
+                  {/* Campos de texto */}
+                  {sectionRows?.map((row) => {
                     const save = updateContent.bind(null, row.id)
                     const isLong = row.value_es.length > 80
 
@@ -222,7 +258,7 @@ export default async function ContentPage({
             )
           })}
 
-          {!rows?.length && (
+          {!rows?.length && !assets?.length && (
             <p className="text-sm text-black/30 py-8 text-center">
               Este viaje no tiene contenido aún. Edita los campos para empezar a llenarlos.
             </p>

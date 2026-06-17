@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { createTrip, toggleTripActive } from './actions'
+import { createTrip, toggleTripActive, deleteTrip } from './actions'
 
 export default async function TripsPage() {
   const supabase = await createClient()
@@ -124,6 +124,19 @@ export default async function TripsPage() {
                               className="text-xs text-black/20 hover:text-black/60 transition-colors"
                             >
                               {trip.is_active ? 'Desactivar' : 'Activar'}
+                            </button>
+                          </form>
+                          <form action={deleteTrip.bind(null, trip.id)}>
+                            <button
+                              type="submit"
+                              onClick={(e) => {
+                                if (!confirm(`¿Eliminar "${trip.name}"? Esta acción no se puede deshacer.`)) {
+                                  e.preventDefault()
+                                }
+                              }}
+                              className="text-xs text-red-400 hover:text-red-600 transition-colors"
+                            >
+                              Eliminar
                             </button>
                           </form>
                         </div>
