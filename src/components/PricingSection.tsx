@@ -33,100 +33,93 @@ export function PricingSection({ content }: { content?: SectionContent }) {
     target: ref,
     offset: ["start end", "start center"],
   });
-
-  const headerOpacity = useTransform(scrollYProgress, [0, 0.5], [0, 1]);
-  const headerY = useTransform(scrollYProgress, [0, 0.5], [32, 0]);
+  const opacity = useTransform(scrollYProgress, [0, 0.6], [0, 1]);
+  const y = useTransform(scrollYProgress, [0, 0.6], [24, 0]);
 
   return (
     <section
       id="pricing"
       ref={ref}
-      className="min-h-screen flex flex-col justify-center py-24 px-6 md:px-12 lg:px-20 bg-[#faf8f5]"
+      className="py-16 md:py-20 px-6 md:px-12 lg:px-20 bg-[#faf8f5]"
     >
       <div className="max-w-[1200px] mx-auto w-full">
+        <motion.div style={{ opacity, y }}>
 
-        {/* Header con precio integrado */}
-        <motion.div
-          style={{ opacity: headerOpacity, y: headerY }}
-          className="mb-16 md:mb-20"
-        >
-          <span className="text-xs uppercase tracking-[0.25em] text-accent-yellow">
+          {/* Label */}
+          <span className="text-xs uppercase tracking-[0.28em] text-accent-yellow">
             {tc("label", t("pricing.label", language))}
           </span>
 
-          <div className="mt-4 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8">
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-normal tracking-[-0.02em] text-black max-w-lg">
-              {tc("title", t("pricing.title", language))}
-            </h2>
+          {/* Grid principal: precio izquierda, incluidos derecha */}
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-10 md:gap-20 items-start">
 
-            {/* Precio como elemento héroe */}
-            <div className="flex flex-col items-start lg:items-end">
-              <span className="text-xs uppercase tracking-[0.2em] text-black/40 mb-1">
-                {tc("priceLabel", t("pricing.priceLabel", language))}
-              </span>
-              <div className="flex items-baseline gap-2">
-                <span className="text-sm font-normal text-black/50 tracking-wide">{currency}</span>
-                <span className="text-6xl md:text-7xl lg:text-8xl font-normal tracking-[-0.04em] text-black leading-none">
+            {/* ── Precio ──────────────────────────────────── */}
+            <div>
+              <div className="flex items-start gap-3">
+                <span className="text-sm text-black/35 mt-3 tracking-wide font-light">
+                  {currency}
+                </span>
+                <span className="text-[4.5rem] sm:text-[5.5rem] md:text-[6.5rem] font-normal leading-none tracking-[-0.04em] text-black tabular-nums">
                   ${price}
                 </span>
               </div>
-              <p className="mt-2 text-xs text-black/40 tracking-wide">
-                {tc("note", t("pricing.note", language))}
+              <p className="mt-4 text-sm text-black/50 leading-snug">
+                {tc("priceLabel", t("pricing.priceLabel", language))}
               </p>
+              <p className="mt-1 text-xs text-black/30 italic">
+                {tc("note", pricing.note)}
+              </p>
+            </div>
+
+            {/* ── Incluidos ───────────────────────────────── */}
+            <div>
+              <span className="text-[10px] uppercase tracking-[0.25em] text-black/35 mb-5 block">
+                {language === "es" ? "Qué incluye" : "What's included"}
+              </span>
+              <ul className="space-y-3">
+                {includes.map((item, i) => (
+                  <motion.li
+                    key={i}
+                    initial={{ opacity: 0, x: 8 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true, margin: "-40px" }}
+                    transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1], delay: i * 0.06 }}
+                    className="flex items-start gap-3"
+                  >
+                    <span className="text-accent-yellow/70 shrink-0 mt-[3px] text-xs select-none">✦</span>
+                    <span className="text-sm md:text-base text-black/75 leading-snug font-normal">
+                      {item}
+                    </span>
+                  </motion.li>
+                ))}
+              </ul>
             </div>
           </div>
 
-          <p className="mt-8 text-base md:text-lg text-black/60 leading-relaxed font-normal max-w-xl text-justify">
-            {tc("description", t("pricing.description", language))}
-          </p>
+          {/* Divisor */}
+          <motion.div
+            className="h-px bg-black/8 mt-10 mb-6 origin-left"
+            initial={{ scaleX: 0 }}
+            whileInView={{ scaleX: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.9, ease: [0.25, 0.1, 0.25, 1] }}
+          />
+
+          {/* No incluye — footnote inline */}
+          {excludes.length > 0 && (
+            <div className="flex flex-wrap items-baseline gap-x-1 gap-y-1">
+              <span className="text-[11px] uppercase tracking-[0.2em] text-black/30 mr-2">
+                {tc("excludesLabel", t("pricing.excludesLabel", language))}
+              </span>
+              {excludes.map((item, i) => (
+                <span key={i} className="text-xs text-black/30 italic">
+                  {item}{i < excludes.length - 1 && <span className="not-italic mx-1 text-black/15">·</span>}
+                </span>
+              ))}
+            </div>
+          )}
+
         </motion.div>
-
-        {/* Divisor */}
-        <div className="w-full h-px bg-black/10 mb-14" />
-
-        {/* Incluye — grid */}
-        <div className="mb-14">
-          <h3 className="text-xs uppercase tracking-[0.2em] text-black/40 mb-8">
-            {tc("includesLabel", t("pricing.includesLabel", language))}
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-0">
-            {includes.map((item, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 12 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: i * 0.05 }}
-                className="flex items-start gap-3 py-4 border-b border-black/8"
-              >
-                <span className="mt-0.5 text-primary text-sm shrink-0">✓</span>
-                <span className="text-sm text-black leading-relaxed">{item}</span>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-
-        {/* No incluye — fila muted */}
-        <div>
-          <h3 className="text-xs uppercase tracking-[0.2em] text-black/30 mb-6">
-            {tc("excludesLabel", t("pricing.excludesLabel", language))}
-          </h3>
-          <div className="flex flex-wrap gap-x-8 gap-y-3">
-            {excludes.map((item, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: i * 0.06 }}
-                className="flex items-center gap-2 text-sm text-black/35 italic"
-              >
-                <span className="text-xs not-italic">×</span>
-                {item}
-              </motion.div>
-            ))}
-          </div>
-        </div>
       </div>
     </section>
   );

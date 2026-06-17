@@ -220,19 +220,16 @@ function DayBlock({
       <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-8 md:gap-20">
         <motion.div style={{ opacity: labelOpacity, x: labelX }}>
           <div className="md:sticky md:top-28">
-            <span className="block text-xs uppercase tracking-[0.25em] text-accent-yellow mb-2">
-              {dayLabel}
+            <span className="block text-2xl md:text-3xl font-normal tabular-nums tracking-[-0.03em] text-black/15 select-none">
+              {numStr}
             </span>
-            <h3 className="text-2xl md:text-3xl font-normal tracking-[-0.02em] text-black">
-              {daySubtitle}
-            </h3>
             <motion.div
-              className="mt-4 h-px bg-primary origin-left"
+              className="mt-3 h-px bg-primary origin-left"
               initial={{ scaleX: 0 }}
               whileInView={{ scaleX: 1 }}
               viewport={{ once: true }}
               transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1], delay: 0.2 }}
-              style={{ width: "3rem" }}
+              style={{ width: "2rem" }}
             />
           </div>
         </motion.div>
