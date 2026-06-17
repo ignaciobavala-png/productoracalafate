@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { compressImage, formatBytes } from '@/lib/compress-image'
+import { compressVideo } from '@/lib/compress-video'
 
 interface Props {
   assetKey: string
@@ -23,16 +24,18 @@ export function AssetUploader({ assetKey, assetId, currentUrl, type, label, comp
   const [url, setUrl] = useState(currentUrl)
   const [error, setError] = useState<string | null>(null)
   const [sizeInfo, setSizeInfo] = useState<SizeInfo | null>(null)
+  const [videoProgress, setVideoProgress] = useState<number | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const accept = type === 'video'
-    ? 'video/mp4,video/webm'
+    ? 'video/mp4,video/webm,video/ogg'
     : 'image/jpeg,image/png,image/webp'
 
   async function handleFile(file: File) {
     setUploading(true)
     setError(null)
     setSizeInfo(null)
+    setVideoProgress(null)
 
     try {
       const supabase = createClient()
@@ -44,6 +47,12 @@ export function AssetUploader({ assetKey, assetId, currentUrl, type, label, comp
         fileToUpload = await compressImage(file)
         ext = 'webp'
         setSizeInfo({ original: file.size, compressed: fileToUpload.size })
+      } else if (type === 'video') {
+        setVideoProgress(0)
+        fileToUpload = await compressVideo(file, (ratio) => setVideoProgress(ratio))
+        ext = 'webm'
+        setSizeInfo({ original: file.size, compressed: fileToUpload.size })
+        setVideoProgress(null)
       }
 
       const path = `${assetKey}.${ext}`
@@ -144,13 +153,30 @@ export function AssetUploader({ assetKey, assetId, currentUrl, type, label, comp
           onClick={() => inputRef.current?.click()}
           className="px-4 py-2 bg-black text-white text-sm font-medium rounded hover:bg-black/80 disabled:opacity-40 transition-colors"
         >
-          {uploading ? 'Subiendo…' : `Subir ${type === 'video' ? 'video' : 'imagen'}`}
+          {uploading
+            ? (videoProgress !== null ? 'Comprimiendo…' : 'Subiendo…')
+            : `Subir ${type === 'video' ? 'video' : 'imagen'}`
+          }
         </button>
 
-        {uploading && (
+        {uploading && videoProgress === null && (
           <span className="text-xs text-black/30 animate-pulse">
-            {type === 'image' ? 'Comprimiendo y subiendo…' : 'Procesando…'}
+            {type === 'image' ? 'Comprimiendo y subiendo…' : 'Subiendo…'}
           </span>
+        )}
+
+        {videoProgress !== null && (
+          <div className="flex items-center gap-2 flex-1">
+            <div className="flex-1 h-1.5 bg-black/8 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-black transition-all duration-300 rounded-full"
+                style={{ width: `${Math.round(videoProgress * 100)}%` }}
+              />
+            </div>
+            <span className="text-xs text-black/40 tabular-nums shrink-0">
+              {videoProgress < 0.02 ? 'Cargando FFmpeg…' : `${Math.round(videoProgress * 100)}%`}
+            </span>
+          </div>
         )}
 
         {sizeInfo && !uploading && (

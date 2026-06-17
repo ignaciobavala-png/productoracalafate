@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll, useTransform, useInView } from "framer-motion";
 import { useOnboardingStore } from "@/store/onboarding-store";
 import { t } from "@/lib/onboarding-text";
 import type { SectionContent } from "@/app/page";
@@ -131,6 +131,8 @@ function DayCinematicPhoto({
   gradientFallback: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref, { once: true, margin: "-10%" });
+
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start end", "end start"],
@@ -139,8 +141,14 @@ function DayCinematicPhoto({
   const numStr = String(dayNumber).padStart(2, "0");
 
   return (
-    <div ref={ref} className="relative h-[48vh] overflow-hidden">
-      {/* Foto con parallax */}
+    <motion.div
+      ref={ref}
+      className="relative h-[55vh] overflow-hidden"
+      initial={{ opacity: 0 }}
+      animate={isInView ? { opacity: 1 } : { opacity: 0 }}
+      transition={{ duration: 0.9, ease: [0.25, 0.1, 0.25, 1] }}
+    >
+      {/* Foto con parallax + zoom de entrada */}
       {photoUrl ? (
         <motion.img
           src={photoUrl}
@@ -148,40 +156,55 @@ function DayCinematicPhoto({
           draggable="false"
           className="absolute inset-0 w-full object-cover"
           style={{ y: imgY, height: "116%", top: "-8%" }}
+          initial={{ scale: 1.08 }}
+          animate={isInView ? { scale: 1 } : { scale: 1.08 }}
+          transition={{ duration: 1.4, ease: [0.25, 0.1, 0.25, 1] }}
         />
       ) : (
-        <div className="absolute inset-0" style={{ background: gradientFallback }} />
+        <motion.div
+          className="absolute inset-0"
+          style={{ background: gradientFallback }}
+          initial={{ scale: 1.08 }}
+          animate={isInView ? { scale: 1 } : { scale: 1.08 }}
+          transition={{ duration: 1.4, ease: [0.25, 0.1, 0.25, 1] }}
+        />
       )}
 
-      {/* Overlay: gradiente de izq (oscuro) a der (transparente) */}
-      <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/45 to-black/10" />
-      {/* Gradiente vertical inferior */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/10" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
       {/* Número decorativo */}
-      <span
+      <motion.span
         aria-hidden="true"
         className="absolute top-1/2 -translate-y-1/2 left-8 md:left-16 text-[12rem] md:text-[18rem] font-bold leading-none select-none pointer-events-none text-white/[0.06] tabular-nums"
+        initial={{ x: -40, opacity: 0 }}
+        animate={isInView ? { x: 0, opacity: 1 } : {}}
+        transition={{ duration: 1.1, ease: [0.25, 0.1, 0.25, 1], delay: 0.15 }}
       >
         {numStr}
-      </span>
+      </motion.span>
 
-      {/* Label y subtítulo */}
+      {/* Label */}
       <motion.div
         className="absolute bottom-10 left-8 md:left-16"
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-80px" }}
-        transition={{ duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
+        initial={{ opacity: 0, y: 32 }}
+        animate={isInView ? { opacity: 1, y: 0 } : {}}
+        transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1], delay: 0.3 }}
       >
-        <span className="block text-xs uppercase tracking-[0.3em] text-accent-yellow mb-3">
+        <motion.span
+          className="block text-xs uppercase tracking-[0.3em] text-accent-yellow mb-3"
+          initial={{ opacity: 0, x: -12 }}
+          animate={isInView ? { opacity: 1, x: 0 } : {}}
+          transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1], delay: 0.45 }}
+        >
           {label}
-        </span>
+        </motion.span>
         <h3 className="text-3xl md:text-5xl lg:text-6xl font-normal tracking-[-0.02em] text-white leading-none">
           {subtitle}
         </h3>
       </motion.div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -210,12 +233,16 @@ function DayBlock({
 
   return (
     <div ref={ref} className="relative">
-      <span
+      <motion.span
         aria-hidden="true"
         className="absolute -top-10 -left-4 md:-left-8 text-[10rem] md:text-[14rem] font-bold leading-none select-none pointer-events-none text-black/[0.04] tabular-nums"
+        initial={{ opacity: 0, x: -30 }}
+        whileInView={{ opacity: 1, x: 0 }}
+        viewport={{ once: true, margin: "-100px" }}
+        transition={{ duration: 1, ease: [0.25, 0.1, 0.25, 1] }}
       >
         {numStr}
-      </span>
+      </motion.span>
 
       <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-8 md:gap-20">
         <motion.div style={{ opacity: labelOpacity, x: labelX }}>
@@ -242,10 +269,15 @@ function DayBlock({
             return (
               <motion.div
                 key={item.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-60px" }}
-                transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1], delay: i * 0.12 }}
+                initial={{ opacity: 0, y: 48, filter: "blur(4px)" }}
+                whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                viewport={{ once: true, margin: "-80px" }}
+                transition={{
+                  duration: 0.7,
+                  ease: [0.25, 0.1, 0.25, 1],
+                  delay: i * 0.18,
+                  filter: { duration: 0.5 },
+                }}
                 className="group border border-hairline bg-surface-soft/50 p-6 md:p-8 hover:border-primary/30 hover:bg-white transition-colors duration-300"
               >
                 <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-black/20 mb-3 block">
