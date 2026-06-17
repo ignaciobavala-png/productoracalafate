@@ -6,9 +6,10 @@ import { revalidatePath } from 'next/cache'
 export async function updateContent(id: string, formData: FormData) {
   const value_es = formData.get('value_es') as string
   const value_en = formData.get('value_en') as string
+  const trip_slug = formData.get('trip_slug') as string | null
 
   const supabase = await createClient()
   await supabase.from('site_content').update({ value_es, value_en }).eq('id', id)
   revalidatePath('/admin/content')
-  revalidatePath('/')
+  if (trip_slug) revalidatePath(`/${trip_slug}`)
 }

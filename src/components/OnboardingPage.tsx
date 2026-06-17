@@ -22,10 +22,15 @@ const STEP_TITLES: Record<number, string> = {
   4: "stepConfirm.title",
 };
 
-function InvitationGate() {
+interface GateProps {
+  tripSlug: string;
+  initialCode?: string;
+}
+
+function InvitationGate({ tripSlug, initialCode }: GateProps) {
   const language = useOnboardingStore((s) => s.language);
   const unlock = useInvitationStore((s) => s.unlock);
-  const [code, setCode] = useState("");
+  const [code, setCode] = useState(initialCode ?? "");
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(false);
@@ -43,12 +48,12 @@ function InvitationGate() {
     setIsValidating(true);
 
     try {
-      const result = await validateInvitationCode(code);
+      const result = await validateInvitationCode(code, tripSlug);
 
       logInvitationRequest(code.trim().toUpperCase(), trimmedEmail);
 
       if (result.valid) {
-        unlock(result.code!);
+        unlock(result.code!, result.tripId!);
       } else {
         setError(result.error || t("invitation.errorInvalid", language));
       }
@@ -145,7 +150,12 @@ function InvitationGate() {
   );
 }
 
-export function OnboardingPage() {
+interface OnboardingPageProps {
+  tripSlug: string;
+  initialCode?: string;
+}
+
+export function OnboardingPage({ tripSlug, initialCode }: OnboardingPageProps) {
   const step = useOnboardingStore((s) => s.step);
   const language = useOnboardingStore((s) => s.language);
   const isSubmitted = useOnboardingStore((s) => s.isSubmitted);
@@ -162,7 +172,7 @@ export function OnboardingPage() {
     (CARD_PAYMENT_METHODS.includes(paymentMethod) || !!paymentProof);
 
   if (!isUnlocked) {
-    return <InvitationGate />;
+    return <InvitationGate tripSlug={tripSlug} initialCode={initialCode} />;
   }
 
   if (isSubmitted) {

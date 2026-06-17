@@ -130,7 +130,7 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
 
     try {
       const supabase = createClient();
-      const validatedCode = useInvitationStore.getState().validatedCode;
+      const { validatedCode, tripId } = useInvitationStore.getState();
 
       // Insertar guest primero para obtener el ID generado
       const { data: guest, error: guestError } = await supabase
@@ -150,6 +150,7 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
           payment_method_id: data.paymentMethod || null,
           accepted_terms: data.acceptedTerms ?? false,
           invitation_code: validatedCode,
+          trip_id: tripId,
         })
         .select("id")
         .single();

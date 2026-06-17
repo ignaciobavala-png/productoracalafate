@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useInvitationStore } from "@/store/invitation-store";
 import { useOnboardingStore } from "@/store/onboarding-store";
@@ -8,13 +8,22 @@ import { t } from "@/lib/onboarding-text";
 import { validateInvitationCode } from "@/app/actions/validate-invitation";
 import { logInvitationRequest } from "@/app/actions/log-invitation-request";
 
-export function InvitationModal() {
+interface Props {
+  tripSlug: string;
+  initialCode?: string;
+}
+
+export function InvitationModal({ tripSlug, initialCode }: Props) {
   const { isOpen, close, unlock } = useInvitationStore();
   const language = useOnboardingStore((s) => s.language);
-  const [code, setCode] = useState("");
+  const [code, setCode] = useState(initialCode ?? "");
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(false);
+
+  useEffect(() => {
+    if (initialCode) setCode(initialCode);
+  }, [initialCode]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -29,12 +38,12 @@ export function InvitationModal() {
     setIsValidating(true);
 
     try {
-      const result = await validateInvitationCode(code);
+      const result = await validateInvitationCode(code, tripSlug);
 
       logInvitationRequest(code.trim().toUpperCase(), trimmedEmail);
 
       if (result.valid) {
-        unlock(result.code!);
+        unlock(result.code!, result.tripId!);
         handleClose();
       } else {
         setError(result.error || t("invitation.errorInvalid", language));

@@ -16,6 +16,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   ])
 
   const navItems = [
+    { href: '/admin/trips',       label: 'Viajes' },
     { href: '/admin/guests',      label: 'Registros',    badge: pending ?? 0 },
     { href: '/admin/invitations', label: 'Invitaciones', badge: unusedCodes ?? 0 },
     { href: '/admin/content',     label: 'Contenido' },
