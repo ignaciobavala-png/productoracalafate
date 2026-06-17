@@ -31,12 +31,18 @@ export default async function TripPage({
 
   if (!trip) notFound();
 
-  const [{ data: contentRows }, { data: assets }] = await Promise.all([
+  const [{ data: contentRows }, { data: assets }, { data: programItems }] = await Promise.all([
     supabase
       .from("site_content")
       .select("section, key, value_es, value_en")
       .eq("trip_id", trip.id),
     supabase.from("site_assets").select("key, url").eq("trip_id", trip.id),
+    supabase
+      .from("program_items")
+      .select("id, day_number, day_label_es, day_label_en, day_subtitle_es, day_subtitle_en, day_photo_url, title_es, title_en, description_es, description_en, sort_order")
+      .eq("trip_id", trip.id)
+      .order("day_number")
+      .order("sort_order"),
   ]);
 
   const contentMap: Record<string, SectionContent> = {};
@@ -62,7 +68,7 @@ export default async function TripPage({
         <HeroSection videoSrc={heroVideoUrl} content={contentMap.hero} />
         <MarqueeSection slots={gallerySlots} />
         <ManifestoSection photoSrc={manifestoPhotoUrl} content={contentMap.manifesto} />
-        <ProgramSection content={contentMap.program} />
+        <ProgramSection content={contentMap.program} items={programItems ?? []} />
         <PricingSection content={contentMap.pricing} />
         <OnboardingPage tripSlug={slug} initialCode={code} />
       </main>

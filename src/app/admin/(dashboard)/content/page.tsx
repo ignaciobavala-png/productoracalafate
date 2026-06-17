@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { updateContent } from './actions'
 import { AssetUploader } from './AssetUploader'
+import { ProgramAdmin } from './ProgramAdmin'
 
 const SECTION_ORDER = ['hero', 'manifesto', 'program', 'pricing', 'footer']
 
@@ -28,7 +29,7 @@ export default async function ContentPage({
 
   const selectedTrip = trips?.find((t) => t.id === tripId) ?? trips?.[0] ?? null
 
-  const [{ data: rows }, { data: assets }] = selectedTrip
+  const [{ data: rows }, { data: assets }, { data: programItems }] = selectedTrip
     ? await Promise.all([
         supabase
           .from('site_content')
@@ -41,8 +42,14 @@ export default async function ContentPage({
           .select('*')
           .eq('trip_id', selectedTrip.id)
           .order('key'),
+        supabase
+          .from('program_items')
+          .select('*')
+          .eq('trip_id', selectedTrip.id)
+          .order('day_number')
+          .order('sort_order'),
       ])
-    : [{ data: null }, { data: null }]
+    : [{ data: null }, { data: null }, { data: null }]
 
   const bySection: Record<string, typeof rows> = {}
   for (const row of rows ?? []) {
@@ -118,6 +125,15 @@ export default async function ContentPage({
                 ))}
               </div>
             </details>
+          )}
+
+          {/* ── Programa dinámico ───────────────────────────── */}
+          {selectedTrip && programItems && (
+            <ProgramAdmin
+              tripId={selectedTrip.id}
+              tripSlug={selectedTrip.slug}
+              items={programItems}
+            />
           )}
 
           {/* ── Secciones de texto ──────────────────────────── */}

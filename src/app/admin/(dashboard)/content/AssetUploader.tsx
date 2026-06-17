@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { compressImage, formatBytes } from '@/lib/compress-image'
 
 interface Props {
   assetKey: string
@@ -11,10 +12,16 @@ interface Props {
   label: string
 }
 
+interface SizeInfo {
+  original: number
+  compressed: number
+}
+
 export function AssetUploader({ assetKey, assetId, currentUrl, type, label }: Props) {
   const [uploading, setUploading] = useState(false)
   const [url, setUrl] = useState(currentUrl)
   const [error, setError] = useState<string | null>(null)
+  const [sizeInfo, setSizeInfo] = useState<SizeInfo | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const accept = type === 'video'
@@ -24,21 +31,30 @@ export function AssetUploader({ assetKey, assetId, currentUrl, type, label }: Pr
   async function handleFile(file: File) {
     setUploading(true)
     setError(null)
+    setSizeInfo(null)
 
     try {
       const supabase = createClient()
-      const ext = file.name.split('.').pop() ?? (type === 'video' ? 'mp4' : 'jpg')
+
+      let fileToUpload = file
+      let ext = file.name.split('.').pop() ?? (type === 'video' ? 'mp4' : 'jpg')
+
+      if (type === 'image') {
+        fileToUpload = await compressImage(file)
+        ext = 'webp'
+        setSizeInfo({ original: file.size, compressed: fileToUpload.size })
+      }
+
       const path = `${assetKey}.${ext}`
 
       const { error: uploadError } = await supabase.storage
         .from('site-assets')
-        .upload(path, file, { upsert: true, cacheControl: '3600' })
+        .upload(path, fileToUpload, { upsert: true, cacheControl: '3600', contentType: fileToUpload.type })
 
       if (uploadError) throw uploadError
 
       const { data: { publicUrl } } = supabase.storage.from('site-assets').getPublicUrl(path)
 
-      // Actualizar URL en site_assets
       await supabase.from('site_assets').update({ url: publicUrl }).eq('id', assetId)
 
       setUrl(publicUrl)
@@ -75,7 +91,7 @@ export function AssetUploader({ assetKey, assetId, currentUrl, type, label }: Pr
         />
       )}
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <input
           ref={inputRef}
           type="file"
@@ -84,6 +100,7 @@ export function AssetUploader({ assetKey, assetId, currentUrl, type, label }: Pr
           onChange={(e) => {
             const f = e.target.files?.[0]
             if (f) handleFile(f)
+            e.target.value = ''
           }}
         />
         <button
@@ -94,10 +111,29 @@ export function AssetUploader({ assetKey, assetId, currentUrl, type, label }: Pr
         >
           {uploading ? 'Subiendo…' : `Subir ${type === 'video' ? 'video' : 'imagen'}`}
         </button>
+
         {uploading && (
-          <span className="text-xs text-black/30 animate-pulse">Procesando…</span>
+          <span className="text-xs text-black/30 animate-pulse">
+            {type === 'image' ? 'Comprimiendo y subiendo…' : 'Procesando…'}
+          </span>
+        )}
+
+        {sizeInfo && !uploading && (
+          <span className="text-xs text-emerald-600 font-mono">
+            {formatBytes(sizeInfo.original)} → {formatBytes(sizeInfo.compressed)}
+            {' '}
+            <span className="text-black/30">
+              ({Math.round((1 - sizeInfo.compressed / sizeInfo.original) * 100)}% menos)
+            </span>
+          </span>
         )}
       </div>
+
+      {type === 'image' && (
+        <p className="text-[11px] text-black/25">
+          Las imágenes se convierten automáticamente a WebP y se redimensionan a máx. 1920px.
+        </p>
+      )}
 
       {error && <p className="text-xs text-red-400">{error}</p>}
     </div>

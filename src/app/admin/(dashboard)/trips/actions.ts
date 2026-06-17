@@ -54,6 +54,32 @@ export async function createTrip(formData: FormData) {
     )
   }
 
+  // Copiar program_items del template
+  const { data: programTemplate } = await supabase
+    .from('program_items')
+    .select('day_number, day_label_es, day_label_en, day_subtitle_es, day_subtitle_en, title_es, title_en, description_es, description_en, sort_order')
+    .eq('trip_id', '00000000-0000-0000-0000-000000000001')
+    .order('day_number')
+    .order('sort_order')
+
+  if (programTemplate && programTemplate.length > 0) {
+    await supabase.from('program_items').insert(
+      programTemplate.map((row) => ({
+        trip_id:         trip.id,
+        day_number:      row.day_number,
+        day_label_es:    row.day_label_es,
+        day_label_en:    row.day_label_en,
+        day_subtitle_es: row.day_subtitle_es,
+        day_subtitle_en: row.day_subtitle_en,
+        title_es:        '',
+        title_en:        '',
+        description_es:  '',
+        description_en:  '',
+        sort_order:      row.sort_order,
+      }))
+    )
+  }
+
   revalidatePath('/admin/trips')
 }
 

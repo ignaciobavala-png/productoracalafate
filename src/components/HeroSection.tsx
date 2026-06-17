@@ -22,7 +22,7 @@ export function HeroSection({ videoSrc, content }: HeroSectionProps) {
   return (
     <section
       id="hero"
-      className="relative min-h-screen flex items-center justify-center overflow-hidden"
+      className="relative min-h-[75vh] flex items-center justify-center overflow-hidden"
     >
       <div className="absolute inset-0 z-0">
         {videoSrc && !videoFailed ? (

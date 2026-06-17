@@ -1,14 +1,17 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+
 const PLACEHOLDERS = [
-  "linear-gradient(135deg, #0d4f5c 0%, #1a2a3a 100%)",
-  "linear-gradient(135deg, #3d2314 0%, #7a4020 100%)",
-  "linear-gradient(135deg, #0a2617 0%, #1d4a2a 100%)",
-  "linear-gradient(135deg, #c67c2a 0%, #8b4513 100%)",
-  "linear-gradient(135deg, #1a1060 0%, #134e5e 100%)",
-  "linear-gradient(135deg, #2c3e50 0%, #3d5a73 100%)",
-  "linear-gradient(135deg, #71b280 0%, #1d4a2a 100%)",
-  "linear-gradient(135deg, #2d1b69 0%, #134e5e 100%)",
+  "linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%)",
+  "linear-gradient(135deg, #222222 0%, #111111 100%)",
+  "linear-gradient(135deg, #181818 0%, #0a0a0a 100%)",
+  "linear-gradient(135deg, #1e1e1e 0%, #0f0f0f 100%)",
+  "linear-gradient(135deg, #141414 0%, #080808 100%)",
+  "linear-gradient(135deg, #202020 0%, #0c0c0c 100%)",
+  "linear-gradient(135deg, #1c1c1c 0%, #0e0e0e 100%)",
+  "linear-gradient(135deg, #262626 0%, #121212 100%)",
 ];
 
 interface MarqueeSectionProps {
@@ -16,47 +19,159 @@ interface MarqueeSectionProps {
 }
 
 export function MarqueeSection({ slots }: MarqueeSectionProps) {
-  if (slots.length === 0) return null;
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+
+  const realPhotos = slots.filter(Boolean);
+
+  const isOpen = lightboxIdx !== null;
+
+  const prev = useCallback(() => {
+    setLightboxIdx((i) => (i !== null ? (i - 1 + realPhotos.length) % realPhotos.length : null));
+  }, [realPhotos.length]);
+
+  const next = useCallback(() => {
+    setLightboxIdx((i) => (i !== null ? (i + 1) % realPhotos.length : null));
+  }, [realPhotos.length]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightboxIdx(null);
+      if (e.key === "ArrowRight") next();
+      if (e.key === "ArrowLeft") prev();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isOpen, prev, next]);
+
+  useEffect(() => {
+    document.body.style.overflow = isOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [isOpen]);
 
   const track = [...slots, ...slots];
-  const dur = Math.max(slots.length * 7, 36);
+  const dur = Math.max(slots.length * 3, 20);
 
   return (
-    <div className="overflow-hidden py-8" aria-hidden="true">
-      <style>{`
-        @keyframes marquee-scroll {
-          from { transform: translateX(0); }
-          to   { transform: translateX(-50%); }
-        }
-        .marquee-track {
-          animation: marquee-scroll ${dur}s linear infinite;
-          will-change: transform;
-        }
-        .marquee-track:hover { animation-play-state: paused; }
-      `}</style>
+    <>
+      <div className="overflow-hidden py-6 md:py-8">
+        <style>{`
+          @keyframes marquee-scroll {
+            from { transform: translate3d(0, 0, 0); }
+            to   { transform: translate3d(-50%, 0, 0); }
+          }
+          .marquee-track {
+            animation: marquee-scroll ${dur}s linear infinite;
+            will-change: transform;
+            backface-visibility: hidden;
+          }
+          .marquee-track:hover { animation-play-state: paused; }
+        `}</style>
 
-      <div className="marquee-track flex gap-3">
-        {track.map((src, i) => (
-          <div
-            key={i}
-            className="shrink-0 h-[52vh] w-[38rem] overflow-hidden group/card"
-            style={
-              !src
-                ? { background: PLACEHOLDERS[i % PLACEHOLDERS.length] }
-                : undefined
-            }
+        <div className="marquee-track flex gap-3">
+          {track.map((src, i) => {
+            const realIdx = src ? realPhotos.indexOf(src) : -1;
+            const clickable = realIdx !== -1;
+
+            return (
+              <div
+                key={i}
+                className={`shrink-0 h-[34vh] md:h-[40vh] w-[24rem] md:w-[30rem] overflow-hidden group/card relative ${clickable ? "cursor-zoom-in" : ""}`}
+                style={!src ? { background: PLACEHOLDERS[i % PLACEHOLDERS.length] } : undefined}
+                onClick={() => clickable && setLightboxIdx(realIdx)}
+              >
+                {src && (
+                  <>
+                    <img
+                      src={src}
+                      alt=""
+                      draggable="false"
+                      className="absolute inset-0 h-full w-full object-cover select-none scale-100 group-hover/card:scale-105 transition-transform duration-700 ease-out"
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover/card:bg-black/25 transition-colors duration-300 flex items-center justify-center">
+                      <svg
+                        className="text-white opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 drop-shadow"
+                        width="28" height="28" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" strokeWidth="1.5"
+                      >
+                        <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                      </svg>
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Lightbox */}
+      <AnimatePresence>
+        {lightboxIdx !== null && (
+          <motion.div
+            className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => setLightboxIdx(null)}
           >
-            {src && (
-              <img
-                src={src}
+            {/* Close */}
+            <button
+              aria-label="Cerrar"
+              className="absolute top-5 right-5 z-10 p-2 text-white/50 hover:text-white transition-colors"
+              onClick={() => setLightboxIdx(null)}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* Counter */}
+            <div className="absolute top-5 left-1/2 -translate-x-1/2 text-white/35 text-xs font-mono tracking-widest select-none">
+              {lightboxIdx + 1} / {realPhotos.length}
+            </div>
+
+            {realPhotos.length > 1 && (
+              <>
+                <button
+                  aria-label="Anterior"
+                  className="absolute left-4 md:left-8 z-10 p-3 text-white/40 hover:text-white transition-colors"
+                  onClick={(e) => { e.stopPropagation(); prev(); }}
+                >
+                  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M15 18l-6-6 6-6" />
+                  </svg>
+                </button>
+                <button
+                  aria-label="Siguiente"
+                  className="absolute right-4 md:right-8 z-10 p-3 text-white/40 hover:text-white transition-colors"
+                  onClick={(e) => { e.stopPropagation(); next(); }}
+                >
+                  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M9 18l6-6-6-6" />
+                  </svg>
+                </button>
+              </>
+            )}
+
+            <AnimatePresence mode="wait">
+              <motion.img
+                key={lightboxIdx}
+                src={realPhotos[lightboxIdx]}
                 alt=""
                 draggable="false"
-                className="h-full w-full object-cover select-none scale-100 group-hover/card:scale-105 transition-transform duration-700 ease-out"
+                className="max-h-[85vh] max-w-[88vw] object-contain select-none"
+                initial={{ opacity: 0, scale: 0.97 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.97 }}
+                transition={{ duration: 0.18 }}
+                onClick={(e) => e.stopPropagation()}
               />
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
+            </AnimatePresence>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
