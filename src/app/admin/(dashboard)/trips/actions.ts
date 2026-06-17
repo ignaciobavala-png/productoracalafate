@@ -37,6 +37,23 @@ export async function createTrip(formData: FormData) {
     )
   }
 
+  const { data: assetTemplate } = await supabase
+    .from('site_assets')
+    .select('key, type, label')
+    .eq('trip_id', '00000000-0000-0000-0000-000000000001')
+
+  if (assetTemplate && assetTemplate.length > 0) {
+    await supabase.from('site_assets').insert(
+      assetTemplate.map((row) => ({
+        trip_id: trip.id,
+        key: row.key,
+        type: row.type,
+        label: row.label,
+        url: '',
+      }))
+    )
+  }
+
   revalidatePath('/admin/trips')
 }
 

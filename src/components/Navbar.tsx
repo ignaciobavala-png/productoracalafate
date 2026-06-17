@@ -2,13 +2,23 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { navLinks } from "@/lib/mock-data";
+import { useOnboardingStore } from "@/store/onboarding-store";
+import { t } from "@/lib/onboarding-text";
 import { InvitationButton } from "./InvitationButton";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { MobileMenu } from "./MobileMenu";
 
+const NAV_ITEMS = [
+  { key: "nav.home",      href: "#hero" },
+  { key: "nav.manifesto", href: "#manifesto" },
+  { key: "nav.program",   href: "#program" },
+  { key: "nav.pricing",   href: "#pricing" },
+  { key: "nav.register",  href: "#onboarding" },
+] as const;
+
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
+  const language = useOnboardingStore((s) => s.language);
 
   useEffect(() => {
     const onScroll = () => {
@@ -46,17 +56,17 @@ export function Navbar() {
             </Link>
 
             <ul className="hidden md:flex items-center gap-6">
-              {navLinks.map((link) => (
-                <li key={link.href}>
+              {NAV_ITEMS.map((item) => (
+                <li key={item.href}>
                   <Link
-                    href={link.href}
+                    href={item.href}
                     className={`text-sm font-normal transition-colors duration-200 ${
                       scrolled
                         ? "text-black hover:text-primary"
                         : "text-on-dark-soft hover:text-canvas"
                     }`}
                   >
-                    {link.label}
+                    {t(item.key, language)}
                   </Link>
                 </li>
               ))}

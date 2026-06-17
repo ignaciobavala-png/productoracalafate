@@ -2,6 +2,14 @@ export const onboardingText = {
   languageLabel: { es: "ES", en: "EN" },
   languageSwitchLabel: { es: "Cambiar idioma", en: "Switch language" },
 
+  nav: {
+    home:      { es: "Inicio",     en: "Home" },
+    manifesto: { es: "Manifiesto", en: "Manifesto" },
+    program:   { es: "Programa",   en: "Program" },
+    pricing:   { es: "Tarifa",     en: "Pricing" },
+    register:  { es: "Registro",   en: "Register" },
+  },
+
   hero: {
     location: { es: "Patagonia, Chile", en: "Patagonia, Chile" },
     title: { es: "Torres del Paine", en: "Torres del Paine" },
@@ -238,11 +246,13 @@ export const onboardingText = {
   },
 
   invitation: {
-    title: { es: "Invitación", en: "Invitation" },
+    eyebrow: { es: "Acceso Exclusivo", en: "Exclusive Access" },
+    title: { es: "Por invitación", en: "By Invitation Only" },
     description: {
-      es: "Este encuentro es por invitación. Ingresá tu código para continuar.",
-      en: "This gathering is by invitation only. Enter your code to continue.",
+      es: "Esta experiencia es para quienes fueron elegidos. Si recibiste un código, es tu puerta de entrada.",
+      en: "This experience is for those who were chosen. If you received a code, it's your door.",
     },
+    divider: { es: "Acceso", en: "Access" },
     codeLabel: { es: "Código de invitación", en: "Invitation code" },
     codePlaceholder: { es: "XXXX-XXXX", en: "XXXX-XXXX" },
     emailLabel: { es: "Correo electrónico", en: "Email" },

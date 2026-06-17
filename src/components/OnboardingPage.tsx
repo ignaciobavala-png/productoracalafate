@@ -65,85 +65,118 @@ function InvitationGate({ tripSlug, initialCode }: GateProps) {
   };
 
   return (
-    <section id="onboarding" className="min-h-screen flex items-center py-24 md:py-32">
-      <div className="max-w-[1200px] mx-auto px-6 md:px-8 w-full">
-        <div className="max-w-md mx-auto">
-          <h2 className="text-2xl md:text-3xl font-semibold tracking-[-0.02em] text-black text-center">
-            {t("invitation.title", language)}
-          </h2>
-          <p className="mt-3 text-sm text-black leading-relaxed font-normal text-center">
-            {t("invitation.description", language)}
-          </p>
+    <section
+      id="onboarding"
+      className="min-h-screen bg-surface-dark flex items-center py-24 md:py-32 px-6 md:px-8"
+    >
+      <div className="max-w-[1200px] mx-auto w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center">
 
-          <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-            <div>
-              <label
-                htmlFor="gate-invite-code"
-                className="block text-xs uppercase tracking-[0.15em] text-black mb-2"
-              >
-                {t("invitation.codeLabel", language)}
-              </label>
-              <input
-                id="gate-invite-code"
-                type="text"
-                value={code}
-                onChange={(e) => {
-                  setCode(e.target.value);
-                  if (error) setError(null);
-                }}
-                required
-                autoComplete="off"
-                className="w-full h-12 px-4 bg-canvas border border-hairline text-black text-sm placeholder:text-black/30 focus:ring-0 focus:border-2 focus:border-primary transition-colors duration-200"
-                placeholder={t("invitation.codePlaceholder", language)}
-              />
+          {/* Columna izquierda — declaración de exclusividad */}
+          <motion.div
+            initial={{ opacity: 0, y: 32 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
+          >
+            <span className="text-xs uppercase tracking-[0.3em] text-accent-yellow">
+              {t("invitation.eyebrow", language)}
+            </span>
+            <h2 className="mt-5 text-3xl md:text-4xl lg:text-5xl font-normal tracking-[-0.02em] leading-tight text-canvas">
+              {t("invitation.title", language)}
+            </h2>
+            <p className="mt-6 text-base text-on-dark-soft leading-relaxed max-w-sm">
+              {t("invitation.description", language)}
+            </p>
+
+            {/* Divisor decorativo */}
+            <div className="mt-10 flex items-center gap-4">
+              <div className="h-px bg-white/10 flex-1" />
+              <span className="text-[10px] uppercase tracking-[0.3em] text-white/20">
+                {t("invitation.divider", language)}
+              </span>
+              <div className="h-px bg-white/10 flex-1" />
             </div>
 
-            <div>
-              <label
-                htmlFor="gate-invite-email"
-                className="block text-xs uppercase tracking-[0.15em] text-black mb-2"
+            <p className="mt-8 text-xs text-white/20 leading-relaxed max-w-xs">
+              {t("invitation.footer", language)}{" "}
+              <a
+                href="mailto:calafatesummits@gmail.com"
+                className="text-white/40 hover:text-accent-yellow underline underline-offset-4 transition-colors duration-200"
               >
-                {t("invitation.emailLabel", language)}
-              </label>
-              <input
-                id="gate-invite-email"
-                type="email"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (error) setError(null);
-                }}
-                required
-                autoComplete="email"
-                className="w-full h-12 px-4 bg-canvas border border-hairline text-black text-sm placeholder:text-black/30 focus:ring-0 focus:border-2 focus:border-primary transition-colors duration-200"
-                placeholder={t("invitation.emailPlaceholder", language)}
-              />
-            </div>
+                calafatesummits@gmail.com
+              </a>
+            </p>
+          </motion.div>
 
-            {error && (
-              <p className="text-sm text-red-600 leading-relaxed">{error}</p>
-            )}
+          {/* Columna derecha — formulario */}
+          <motion.div
+            initial={{ opacity: 0, y: 32 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1], delay: 0.15 }}
+          >
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <label
+                  htmlFor="gate-invite-code"
+                  className="block text-[10px] uppercase tracking-[0.2em] text-white/40 mb-2"
+                >
+                  {t("invitation.codeLabel", language)}
+                </label>
+                <input
+                  id="gate-invite-code"
+                  type="text"
+                  value={code}
+                  onChange={(e) => {
+                    setCode(e.target.value);
+                    if (error) setError(null);
+                  }}
+                  required
+                  autoComplete="off"
+                  className="w-full h-13 px-4 bg-surface-dark-elevated border border-white/10 text-canvas text-sm placeholder:text-white/20 focus:outline-none focus:border-accent-yellow/60 transition-colors duration-200"
+                  placeholder={t("invitation.codePlaceholder", language)}
+                />
+              </div>
 
-            <button
-              type="submit"
-              disabled={isValidating}
-              className="w-full py-3 px-6 bg-primary text-on-primary text-sm font-semibold hover:bg-primary-active transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isValidating
-                ? t("invitation.validating", language)
-                : t("invitation.submit", language)}
-            </button>
-          </form>
+              <div>
+                <label
+                  htmlFor="gate-invite-email"
+                  className="block text-[10px] uppercase tracking-[0.2em] text-white/40 mb-2"
+                >
+                  {t("invitation.emailLabel", language)}
+                </label>
+                <input
+                  id="gate-invite-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (error) setError(null);
+                  }}
+                  required
+                  autoComplete="email"
+                  className="w-full h-13 px-4 bg-surface-dark-elevated border border-white/10 text-canvas text-sm placeholder:text-white/20 focus:outline-none focus:border-accent-yellow/60 transition-colors duration-200"
+                  placeholder={t("invitation.emailPlaceholder", language)}
+                />
+              </div>
 
-          <p className="mt-6 text-xs text-black text-center leading-relaxed">
-            {t("invitation.footer", language)}{" "}
-            <a
-              href="mailto:calafatesummits@gmail.com"
-              className="underline underline-offset-4 hover:text-primary transition-colors"
-            >
-              calafatesummits@gmail.com
-            </a>
-          </p>
+              {error && (
+                <p className="text-sm text-red-400 leading-relaxed">{error}</p>
+              )}
+
+              <button
+                type="submit"
+                disabled={isValidating}
+                className="w-full py-4 px-6 bg-accent-yellow text-black text-sm font-semibold tracking-wide hover:bg-yellow-300 transition-colors duration-200 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed mt-2"
+              >
+                {isValidating
+                  ? t("invitation.validating", language)
+                  : t("invitation.submit", language)}
+              </button>
+            </form>
+          </motion.div>
+
         </div>
       </div>
     </section>

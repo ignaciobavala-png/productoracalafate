@@ -7,6 +7,7 @@ import { ProgramSection } from "@/components/ProgramSection";
 import { PricingSection } from "@/components/PricingSection";
 import { OnboardingPage } from "@/components/OnboardingPage";
 import { Footer } from "@/components/Footer";
+import { MarqueeSection } from "@/components/MarqueeSection";
 import { InvitationModal } from "@/components/InvitationModal";
 import type { SectionContent } from "../page";
 
@@ -46,13 +47,21 @@ export default async function TripPage({
 
   const heroVideoUrl =
     assets?.find((a) => a.key === "hero_video")?.url || undefined;
+  const manifestoPhotoUrl =
+    assets?.find((a) => a.key === "manifesto_photo")?.url || undefined;
+
+  const gallerySlots = Array.from({ length: 8 }, (_, i) => {
+    const asset = (assets ?? []).find((a) => a.key === `gallery_${i + 1}`);
+    return asset?.url ?? "";
+  });
 
   return (
     <>
       <Navbar />
       <main>
         <HeroSection videoSrc={heroVideoUrl} content={contentMap.hero} />
-        <ManifestoSection content={contentMap.manifesto} />
+        <MarqueeSection slots={gallerySlots} />
+        <ManifestoSection photoSrc={manifestoPhotoUrl} content={contentMap.manifesto} />
         <ProgramSection content={contentMap.program} />
         <PricingSection content={contentMap.pricing} />
         <OnboardingPage tripSlug={slug} initialCode={code} />
