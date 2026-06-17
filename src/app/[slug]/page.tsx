@@ -51,7 +51,7 @@ export default async function TripPage({
     contentMap[row.section][row.key] = { es: row.value_es, en: row.value_en };
   }
 
-  const heroVideoUrl =
+  const heroMediaUrl =
     assets?.find((a) => a.key === "hero_video")?.url || undefined;
   const manifestoPhotoUrl =
     assets?.find((a) => a.key === "manifesto_photo")?.url || undefined;
@@ -65,7 +65,7 @@ export default async function TripPage({
     <>
       <Navbar />
       <main>
-        <HeroSection videoSrc={heroVideoUrl} content={contentMap.hero} />
+        <HeroSection mediaSrc={heroMediaUrl} content={contentMap.hero} />
         <MarqueeSection slots={gallerySlots} />
         <ManifestoSection photoSrc={manifestoPhotoUrl} content={contentMap.manifesto} />
         <ProgramSection content={contentMap.program} items={programItems ?? []} />

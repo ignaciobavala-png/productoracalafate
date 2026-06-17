@@ -6,12 +6,19 @@ import { useOnboardingStore } from "@/store/onboarding-store";
 import { t } from "@/lib/onboarding-text";
 import type { SectionContent } from "@/app/page";
 
+const VIDEO_EXTS = ['mp4', 'webm', 'ogg', 'mov']
+
+function isVideo(url: string) {
+  const ext = url.split('?')[0].split('.').pop()?.toLowerCase() ?? ''
+  return VIDEO_EXTS.includes(ext)
+}
+
 interface HeroSectionProps {
-  videoSrc?: string;
+  mediaSrc?: string;
   content?: SectionContent;
 }
 
-export function HeroSection({ videoSrc, content }: HeroSectionProps) {
+export function HeroSection({ mediaSrc, content }: HeroSectionProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoFailed, setVideoFailed] = useState(false);
   const language = useOnboardingStore((s) => s.language);
@@ -19,13 +26,15 @@ export function HeroSection({ videoSrc, content }: HeroSectionProps) {
   const tc = (key: string, fallback: string) =>
     content?.[key]?.[language] ?? fallback;
 
+  const mediaIsVideo = mediaSrc ? isVideo(mediaSrc) : false;
+
   return (
     <section
       id="hero"
       className="relative min-h-[75vh] flex items-center justify-center overflow-hidden"
     >
       <div className="absolute inset-0 z-0">
-        {videoSrc && !videoFailed ? (
+        {mediaSrc && mediaIsVideo && !videoFailed ? (
           <video
             ref={videoRef}
             autoPlay
@@ -35,8 +44,14 @@ export function HeroSection({ videoSrc, content }: HeroSectionProps) {
             onError={() => setVideoFailed(true)}
             className="absolute inset-0 w-full h-full object-cover"
           >
-            <source src={videoSrc} type="video/mp4" />
+            <source src={mediaSrc} />
           </video>
+        ) : mediaSrc && !mediaIsVideo ? (
+          <img
+            src={mediaSrc}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+          />
         ) : (
           <div className="absolute inset-0 bg-surface-dark" />
         )}

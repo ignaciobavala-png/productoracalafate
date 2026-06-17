@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { useOnboardingStore } from "@/store/onboarding-store";
 import { t } from "@/lib/onboarding-text";
 import { paymentMethods, CARD_PAYMENT_METHODS } from "@/lib/mock-data";
+import { TermsModal } from "./TermsModal";
 
 function CopyButton({ value }: { value: string }) {
   const [copied, setCopied] = useState(false);
@@ -51,6 +52,7 @@ export function StepPayment() {
   const updateField = useOnboardingStore((s) => s.updateField);
   const setPaymentProof = useOnboardingStore((s) => s.setPaymentProof);
   const language = useOnboardingStore((s) => s.language);
+  const [termsOpen, setTermsOpen] = useState(false);
 
   const selected = paymentMethods.find((m) => m.id === data.paymentMethod);
   const isCardMethod = selected ? CARD_PAYMENT_METHODS.includes(selected.id) : false;
@@ -172,20 +174,44 @@ export function StepPayment() {
       )}
 
       {/* Términos */}
-      <div className="pt-4 border-t border-hairline space-y-4">
-        <label className="flex items-start gap-3 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={data.acceptedTerms ?? false}
-            onChange={(e) => updateField("acceptedTerms", e.target.checked)}
-            className="mt-0.5 w-4 h-4 accent-primary cursor-pointer"
-          />
-          <span className="text-sm text-black leading-relaxed">
-            {t("stepPayment.termsLabel", language)}
-            <span className="text-primary ml-1">*</span>
+      <div className="pt-4 border-t border-hairline">
+        <button
+          type="button"
+          onClick={() => setTermsOpen(true)}
+          className="flex items-start gap-3 w-full text-left cursor-pointer group"
+        >
+          <span
+            className={`mt-0.5 w-4 h-4 shrink-0 flex items-center justify-center border transition-colors duration-200 ${
+              data.acceptedTerms
+                ? "bg-ink border-ink"
+                : "border-hairline group-hover:border-ink/40"
+            }`}
+          >
+            {data.acceptedTerms && (
+              <svg
+                width="10" height="10" viewBox="0 0 10 10"
+                fill="none" stroke="currentColor" strokeWidth="2"
+                className="text-canvas"
+              >
+                <path d="M2 5l2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
           </span>
-        </label>
+          <span className="text-sm text-black leading-relaxed group-hover:text-black/80 transition-colors">
+            {data.acceptedTerms
+              ? (language === "es" ? "Términos y condiciones aceptados" : "Terms and conditions accepted")
+              : t("stepPayment.termsLabel", language)}
+            {!data.acceptedTerms && <span className="text-primary ml-1">*</span>}
+          </span>
+        </button>
       </div>
+
+      <TermsModal
+        open={termsOpen}
+        alreadyAccepted={!!data.acceptedTerms}
+        onClose={() => setTermsOpen(false)}
+        onAccept={() => updateField("acceptedTerms", true)}
+      />
 
       <div className="text-[11px] text-black/50 leading-relaxed">
         {t("stepPayment.contactLabel", language)}

@@ -193,7 +193,7 @@ export default async function ContentPage({
                         assetKey={asset.key}
                         assetId={asset.id}
                         currentUrl={asset.url}
-                        type={asset.type as 'video' | 'image'}
+                        type={asset.key === 'hero_video' ? 'media' : asset.type as 'video' | 'image'}
                         label={asset.label ?? asset.key}
                       />
                     </div>

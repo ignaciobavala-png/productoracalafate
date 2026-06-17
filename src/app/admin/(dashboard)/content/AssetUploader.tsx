@@ -9,7 +9,7 @@ interface Props {
   assetKey: string
   assetId: string
   currentUrl: string
-  type: 'video' | 'image'
+  type: 'video' | 'image' | 'media'
   label: string
   compact?: boolean
 }
@@ -29,7 +29,9 @@ export function AssetUploader({ assetKey, assetId, currentUrl, type, label, comp
 
   const accept = type === 'video'
     ? 'video/mp4,video/webm,video/ogg'
-    : 'image/jpeg,image/png,image/webp'
+    : type === 'media'
+      ? 'video/mp4,video/webm,video/ogg,image/jpeg,image/png,image/webp'
+      : 'image/jpeg,image/png,image/webp'
 
   async function handleFile(file: File) {
     setUploading(true)
@@ -43,11 +45,14 @@ export function AssetUploader({ assetKey, assetId, currentUrl, type, label, comp
       let fileToUpload = file
       let ext = file.name.split('.').pop() ?? (type === 'video' ? 'mp4' : 'jpg')
 
-      if (type === 'image') {
+      const fileIsVideo = file.type.startsWith('video/')
+      const fileIsImage = file.type.startsWith('image/')
+
+      if (fileIsImage) {
         fileToUpload = await compressImage(file)
         ext = 'webp'
         setSizeInfo({ original: file.size, compressed: fileToUpload.size })
-      } else if (type === 'video') {
+      } else if (fileIsVideo) {
         setVideoProgress(0)
         fileToUpload = await compressVideo(file, (ratio) => setVideoProgress(ratio))
         ext = 'webm'
@@ -75,6 +80,14 @@ export function AssetUploader({ assetKey, assetId, currentUrl, type, label, comp
     }
   }
 
+  async function handleRemove() {
+    if (!confirm('¿Eliminar este archivo?')) return
+    const supabase = createClient()
+    await supabase.from('site_assets').update({ url: '' }).eq('id', assetId)
+    setUrl('')
+    setSizeInfo(null)
+  }
+
   const fileInput = (
     <input
       ref={inputRef}
@@ -92,13 +105,27 @@ export function AssetUploader({ assetKey, assetId, currentUrl, type, label, comp
   if (compact) {
     return (
       <div className="space-y-1.5">
-        {url ? (
-          <img src={url} alt={label} className="w-full aspect-video object-cover rounded border border-black/10" />
-        ) : (
-          <div className="w-full aspect-video bg-black/[0.03] rounded border border-dashed border-black/15 flex items-center justify-center">
-            <span className="text-[10px] text-black/20">Sin foto</span>
-          </div>
-        )}
+        <div className="relative group">
+          {url ? (
+            <img src={url} alt={label} className="w-full aspect-video object-cover rounded border border-black/10" />
+          ) : (
+            <div className="w-full aspect-video bg-black/[0.03] rounded border border-dashed border-black/15 flex items-center justify-center">
+              <span className="text-[10px] text-black/20">Sin foto</span>
+            </div>
+          )}
+          {url && (
+            <button
+              type="button"
+              onClick={handleRemove}
+              className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 hover:bg-red-600 text-white rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-150"
+              title="Eliminar"
+            >
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                <path d="M2 2l6 6M8 2l-6 6" />
+              </svg>
+            </button>
+          )}
+        </div>
         {fileInput}
         <button
           type="button"
@@ -128,21 +155,36 @@ export function AssetUploader({ assetKey, assetId, currentUrl, type, label, comp
         </p>
       </div>
 
-      {url && type === 'image' && (
-        <img
-          src={url}
-          alt={label}
-          className="max-h-32 rounded border border-black/10 object-cover"
-        />
+      {url && (type === 'image' || (type === 'media' && !url.match(/\.(mp4|webm|ogg|mov)(\?|$)/i))) && (
+        <div className="relative group inline-block">
+          <img src={url} alt={label} className="max-h-32 rounded border border-black/10 object-cover" />
+          <button
+            type="button"
+            onClick={handleRemove}
+            className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 hover:bg-red-600 text-white rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-150"
+            title="Eliminar"
+          >
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <path d="M2 2l6 6M8 2l-6 6" />
+            </svg>
+          </button>
+        </div>
       )}
 
-      {url && type === 'video' && (
-        <video
-          src={url}
-          className="max-h-32 rounded border border-black/10 w-full object-cover"
-          muted
-          playsInline
-        />
+      {url && (type === 'video' || (type === 'media' && url.match(/\.(mp4|webm|ogg|mov)(\?|$)/i))) && (
+        <div className="relative group">
+          <video src={url} className="max-h-32 rounded border border-black/10 w-full object-cover" muted playsInline />
+          <button
+            type="button"
+            onClick={handleRemove}
+            className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 hover:bg-red-600 text-white rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-150"
+            title="Eliminar"
+          >
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <path d="M2 2l6 6M8 2l-6 6" />
+            </svg>
+          </button>
+        </div>
       )}
 
       <div className="flex items-center gap-3 flex-wrap">
@@ -155,7 +197,7 @@ export function AssetUploader({ assetKey, assetId, currentUrl, type, label, comp
         >
           {uploading
             ? (videoProgress !== null ? 'Comprimiendo…' : 'Subiendo…')
-            : `Subir ${type === 'video' ? 'video' : 'imagen'}`
+            : `Subir ${type === 'video' ? 'video' : type === 'media' ? 'foto o video' : 'imagen'}`
           }
         </button>
 
