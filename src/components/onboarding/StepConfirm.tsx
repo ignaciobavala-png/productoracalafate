@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useOnboardingStore } from "@/store/onboarding-store";
 import { t } from "@/lib/onboarding-text";
 import { paymentMethods } from "@/lib/mock-data";
@@ -9,6 +10,16 @@ export function StepConfirm() {
   const language = useOnboardingStore((s) => s.language);
   const isSubmitting = useOnboardingStore((s) => s.isSubmitting);
   const submit = useOnboardingStore((s) => s.submit);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const handleSubmit = async () => {
+    setSubmitError(null);
+    try {
+      await submit();
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : (language === "es" ? "Error al enviar. Intenta nuevamente." : "Submission failed. Please try again."));
+    }
+  };
 
   const companion = data.companion;
   const methodName = paymentMethods.find((m) => m.id === data.paymentMethod)?.label ?? t("stepConfirm.emptyField", language);
@@ -84,9 +95,12 @@ export function StepConfirm() {
       </div>
 
       <div className="pt-4 border-t border-hairline">
+        {submitError && (
+          <p className="text-sm text-red-500 mb-3 leading-relaxed">{submitError}</p>
+        )}
         <button
           type="button"
-          onClick={submit}
+          onClick={handleSubmit}
           disabled={isSubmitting || !data.acceptedTerms}
           className="w-full py-3.5 px-6 bg-ink text-canvas text-sm uppercase tracking-[0.15em] hover:bg-ink/90 transition-colors duration-300 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3"
         >

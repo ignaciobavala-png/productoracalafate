@@ -125,7 +125,9 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
     }),
 
   submit: async () => {
-    const { data } = useOnboardingStore.getState();
+    const state = useOnboardingStore.getState();
+    if (state.isSubmitting || state.isSubmitted) return;
+    const { data } = state;
     set({ isSubmitting: true });
 
     try {
@@ -155,7 +157,12 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
         .select("id")
         .single();
 
-      if (guestError) throw guestError;
+      if (guestError) {
+        if (guestError.code === "23505") {
+          throw new Error("Este email ya fue registrado para este viaje.");
+        }
+        throw guestError;
+      }
       const guestId = guest.id;
 
       // Marcar la invitación como usada

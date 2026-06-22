@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useOnboardingStore } from "@/store/onboarding-store";
 import { useInvitationStore } from "@/store/invitation-store";
@@ -196,6 +196,12 @@ export function OnboardingPage({ tripSlug, initialCode }: OnboardingPageProps) {
   const prevStep = useOnboardingStore((s) => s.prevStep);
   const data = useOnboardingStore((s) => s.data);
   const isUnlocked = useInvitationStore((s) => s.isUnlocked);
+
+  useEffect(() => {
+    if (isSubmitted) {
+      document.getElementById("onboarding")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [isSubmitted]);
 
   const isStep1Ready = !!(
     data.fullName?.trim() &&
