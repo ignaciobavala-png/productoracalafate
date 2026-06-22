@@ -49,7 +49,7 @@ function InvitationGate({ tripSlug, initialCode, contactEmail }: GateProps) {
     setIsValidating(true);
 
     try {
-      const result = await validateInvitationCode(code, tripSlug);
+      const result = await validateInvitationCode(code, tripSlug, trimmedEmail);
 
       logInvitationRequest(code.trim().toUpperCase(), trimmedEmail);
 

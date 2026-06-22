@@ -39,7 +39,7 @@ export function InvitationModal({ tripSlug, initialCode, contactEmail }: Props) 
     setIsValidating(true);
 
     try {
-      const result = await validateInvitationCode(code, tripSlug);
+      const result = await validateInvitationCode(code, tripSlug, trimmedEmail);
 
       logInvitationRequest(code.trim().toUpperCase(), trimmedEmail);
 
