@@ -3,13 +3,14 @@
 import { useState } from "react";
 import { useOnboardingStore } from "@/store/onboarding-store";
 import { t } from "@/lib/onboarding-text";
-import { paymentMethods } from "@/lib/mock-data";
+import { buildPaymentMethods } from "@/lib/mock-data";
 
 export function StepConfirm() {
   const data = useOnboardingStore((s) => s.data);
   const language = useOnboardingStore((s) => s.language);
   const isSubmitting = useOnboardingStore((s) => s.isSubmitting);
   const submit = useOnboardingStore((s) => s.submit);
+  const paymentContent = useOnboardingStore((s) => s.paymentContent);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
@@ -22,6 +23,7 @@ export function StepConfirm() {
   };
 
   const companion = data.companion;
+  const paymentMethods = buildPaymentMethods(paymentContent, language);
   const methodName = paymentMethods.find((m) => m.id === data.paymentMethod)?.label ?? t("stepConfirm.emptyField", language);
 
   return (

@@ -51,6 +51,7 @@ export function MarqueeSection({ slots }: MarqueeSectionProps) {
 
   const track = [...slots, ...slots];
   const dur = Math.max(slots.length * 1.8, 14);
+  const durMobile = Math.max(slots.length * 0.6, 4);
 
   return (
     <>
@@ -61,12 +62,21 @@ export function MarqueeSection({ slots }: MarqueeSectionProps) {
             from { transform: translate3d(0, 0, 0); }
             to   { transform: translate3d(-50%, 0, 0); }
           }
+          @keyframes marquee-scroll-mobile {
+            from { transform: translate3d(0, 0, 0); }
+            to   { transform: translate3d(-50%, 0, 0); }
+          }
           .marquee-track {
             animation: marquee-scroll ${dur}s linear infinite;
             will-change: transform;
             backface-visibility: hidden;
           }
           .marquee-track:hover { animation-play-state: paused; }
+          .marquee-track-mobile {
+            animation: marquee-scroll-mobile ${durMobile}s linear infinite;
+            will-change: transform;
+            backface-visibility: hidden;
+          }
         `}</style>
 
         <div className="marquee-track flex gap-3">
@@ -106,20 +116,17 @@ export function MarqueeSection({ slots }: MarqueeSectionProps) {
         </div>
       </div>
 
-      {/* ── Mobile: scroll-snap ────────────────────────────────── */}
-      <div className="md:hidden py-4">
-        <div
-          className="flex overflow-x-auto gap-2 px-4 snap-x snap-mandatory scrollbar-none"
-          style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" } as React.CSSProperties}
-        >
-          {slots.map((src, i) => {
+      {/* ── Mobile: marquee full-width ────────────────────────── */}
+      <div className="md:hidden overflow-hidden">
+        <div className="marquee-track-mobile flex gap-0">
+          {track.map((src, i) => {
             const realIdx = src ? realPhotos.indexOf(src) : -1;
             const clickable = realIdx !== -1;
 
             return (
               <div
                 key={i}
-                className="shrink-0 snap-center w-[80vw] h-[52vw] overflow-hidden relative rounded-sm"
+                className={`shrink-0 w-screen h-[56vw] overflow-hidden relative ${clickable ? "cursor-zoom-in" : ""}`}
                 style={!src ? { background: PLACEHOLDERS[i % PLACEHOLDERS.length] } : undefined}
                 onClick={() => clickable && setLightboxIdx(realIdx)}
               >
@@ -134,14 +141,7 @@ export function MarqueeSection({ slots }: MarqueeSectionProps) {
               </div>
             );
           })}
-          {/* Padding final para que la última foto quede centrada */}
-          <div className="shrink-0 w-[10vw]" />
         </div>
-        {realPhotos.length > 0 && (
-          <p className="text-center text-[10px] text-black/25 tracking-widest uppercase mt-3">
-            desliza para ver más
-          </p>
-        )}
       </div>
 
       {/* Lightbox */}

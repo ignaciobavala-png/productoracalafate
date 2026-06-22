@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { ExportButton } from './ExportButton'
 
 const STATUS_LABEL: Record<string, string> = {
   pending:   'Pendiente',
@@ -31,11 +32,14 @@ export default async function GuestsPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-semibold">Registros</h1>
-        <div className="flex items-center gap-3 text-sm text-black/40">
-          <span>{counts.total} total</span>
-          <span className="text-yellow-700">{counts.pending} pendientes</span>
-          <span className="text-green-700">{counts.confirmed} confirmados</span>
-          <span className="text-red-700">{counts.rejected} rechazados</span>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 text-sm text-black/40">
+            <span>{counts.total} total</span>
+            <span className="text-yellow-700">{counts.pending} pendientes</span>
+            <span className="text-green-700">{counts.confirmed} confirmados</span>
+            <span className="text-red-700">{counts.rejected} rechazados</span>
+          </div>
+          <ExportButton />
         </div>
       </div>
 

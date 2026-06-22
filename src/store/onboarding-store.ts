@@ -8,17 +8,22 @@ import { consumeInvitationCode } from "@/app/actions/consume-invitation";
 import { updateGuestUrl } from "@/app/actions/update-guest-urls";
 import { updateCompanionUrl } from "@/app/actions/update-companion-url";
 
+type ContentMap = Record<string, { es: string; en: string }>
+
 interface OnboardingState {
   step: number;
   language: Language;
   data: Partial<GuestOnboardingData>;
   isSubmitting: boolean;
   isSubmitted: boolean;
+  paymentContent: ContentMap;
+  footerContent: ContentMap;
 
   setStep: (step: number) => void;
   nextStep: () => void;
   prevStep: () => void;
   setLanguage: (lang: Language) => void;
+  initContent: (payment: ContentMap, footer: ContentMap) => void;
   updateField: <K extends keyof GuestOnboardingData>(
     key: K,
     value: GuestOnboardingData[K]
@@ -76,8 +81,11 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
   data: { ...initialData },
   isSubmitting: false,
   isSubmitted: false,
+  paymentContent: {},
+  footerContent: {},
 
   setStep: (step) => set({ step }),
+  initContent: (payment, footer) => set({ paymentContent: payment, footerContent: footer }),
   nextStep: () =>
     set((s) => ({ step: Math.min(s.step + 1, 5) })),
   prevStep: () =>

@@ -25,9 +25,10 @@ const STEP_TITLES: Record<number, string> = {
 interface GateProps {
   tripSlug: string;
   initialCode?: string;
+  contactEmail?: string;
 }
 
-function InvitationGate({ tripSlug, initialCode }: GateProps) {
+function InvitationGate({ tripSlug, initialCode, contactEmail }: GateProps) {
   const language = useOnboardingStore((s) => s.language);
   const unlock = useInvitationStore((s) => s.unlock);
   const [code, setCode] = useState(initialCode ?? "");
@@ -101,10 +102,10 @@ function InvitationGate({ tripSlug, initialCode }: GateProps) {
             <p className="mt-5 text-xs text-white/20 leading-relaxed max-w-xs">
               {t("invitation.footer", language)}{" "}
               <a
-                href="mailto:calafatesummits@gmail.com"
+                href={`mailto:${contactEmail ?? 'calafatesummits@gmail.com'}`}
                 className="text-white/40 hover:text-accent-yellow underline underline-offset-4 transition-colors duration-200"
               >
-                calafatesummits@gmail.com
+                {contactEmail ?? 'calafatesummits@gmail.com'}
               </a>
             </p>
           </motion.div>
@@ -183,12 +184,16 @@ function InvitationGate({ tripSlug, initialCode }: GateProps) {
   );
 }
 
+type ContentMap = Record<string, { es: string; en: string }>
+
 interface OnboardingPageProps {
   tripSlug: string;
   initialCode?: string;
+  paymentContent?: ContentMap;
+  footerContent?: ContentMap;
 }
 
-export function OnboardingPage({ tripSlug, initialCode }: OnboardingPageProps) {
+export function OnboardingPage({ tripSlug, initialCode, paymentContent, footerContent }: OnboardingPageProps) {
   const step = useOnboardingStore((s) => s.step);
   const language = useOnboardingStore((s) => s.language);
   const isSubmitted = useOnboardingStore((s) => s.isSubmitted);
@@ -196,6 +201,13 @@ export function OnboardingPage({ tripSlug, initialCode }: OnboardingPageProps) {
   const prevStep = useOnboardingStore((s) => s.prevStep);
   const data = useOnboardingStore((s) => s.data);
   const isUnlocked = useInvitationStore((s) => s.isUnlocked);
+  const initContent = useOnboardingStore((s) => s.initContent);
+  const storedFooterContent = useOnboardingStore((s) => s.footerContent);
+
+  useEffect(() => {
+    initContent(paymentContent ?? {}, footerContent ?? {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (isSubmitted) {
@@ -249,8 +261,11 @@ export function OnboardingPage({ tripSlug, initialCode }: OnboardingPageProps) {
       : "Select a payment method and accept the terms.",
   };
 
+  const language2 = language === "es" ? "es" : "en";
+  const contactEmail = storedFooterContent?.company_email?.[language2];
+
   if (!isUnlocked) {
-    return <InvitationGate tripSlug={tripSlug} initialCode={initialCode} />;
+    return <InvitationGate tripSlug={tripSlug} initialCode={initialCode} contactEmail={contactEmail} />;
   }
 
   if (isSubmitted) {
