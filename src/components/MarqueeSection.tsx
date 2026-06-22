@@ -50,11 +50,12 @@ export function MarqueeSection({ slots }: MarqueeSectionProps) {
   }, [isOpen]);
 
   const track = [...slots, ...slots];
-  const dur = Math.max(slots.length * 3, 20);
+  const dur = Math.max(slots.length * 1.8, 14);
 
   return (
     <>
-      <div className="overflow-hidden py-6 md:py-8">
+      {/* ── Desktop: marquee ───────────────────────────────────── */}
+      <div className="hidden md:block overflow-hidden py-6 md:py-8">
         <style>{`
           @keyframes marquee-scroll {
             from { transform: translate3d(0, 0, 0); }
@@ -76,7 +77,7 @@ export function MarqueeSection({ slots }: MarqueeSectionProps) {
             return (
               <div
                 key={i}
-                className={`shrink-0 h-[34vh] md:h-[40vh] w-[24rem] md:w-[30rem] overflow-hidden group/card relative ${clickable ? "cursor-zoom-in" : ""}`}
+                className={`shrink-0 h-[40vh] w-[30rem] overflow-hidden group/card relative ${clickable ? "cursor-zoom-in" : ""}`}
                 style={!src ? { background: PLACEHOLDERS[i % PLACEHOLDERS.length] } : undefined}
                 onClick={() => clickable && setLightboxIdx(realIdx)}
               >
@@ -103,6 +104,44 @@ export function MarqueeSection({ slots }: MarqueeSectionProps) {
             );
           })}
         </div>
+      </div>
+
+      {/* ── Mobile: scroll-snap ────────────────────────────────── */}
+      <div className="md:hidden py-4">
+        <div
+          className="flex overflow-x-auto gap-2 px-4 snap-x snap-mandatory scrollbar-none"
+          style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" } as React.CSSProperties}
+        >
+          {slots.map((src, i) => {
+            const realIdx = src ? realPhotos.indexOf(src) : -1;
+            const clickable = realIdx !== -1;
+
+            return (
+              <div
+                key={i}
+                className="shrink-0 snap-center w-[80vw] h-[52vw] overflow-hidden relative rounded-sm"
+                style={!src ? { background: PLACEHOLDERS[i % PLACEHOLDERS.length] } : undefined}
+                onClick={() => clickable && setLightboxIdx(realIdx)}
+              >
+                {src && (
+                  <img
+                    src={src}
+                    alt=""
+                    draggable="false"
+                    className="absolute inset-0 h-full w-full object-cover select-none"
+                  />
+                )}
+              </div>
+            );
+          })}
+          {/* Padding final para que la última foto quede centrada */}
+          <div className="shrink-0 w-[10vw]" />
+        </div>
+        {realPhotos.length > 0 && (
+          <p className="text-center text-[10px] text-black/25 tracking-widest uppercase mt-3">
+            desliza para ver más
+          </p>
+        )}
       </div>
 
       {/* Lightbox */}
