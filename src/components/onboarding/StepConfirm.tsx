@@ -1,16 +1,29 @@
 "use client";
 
+import { useState } from "react";
 import { useOnboardingStore } from "@/store/onboarding-store";
 import { t } from "@/lib/onboarding-text";
-import { paymentMethods } from "@/lib/mock-data";
+import { buildPaymentMethods } from "@/lib/mock-data";
 
 export function StepConfirm() {
   const data = useOnboardingStore((s) => s.data);
   const language = useOnboardingStore((s) => s.language);
   const isSubmitting = useOnboardingStore((s) => s.isSubmitting);
   const submit = useOnboardingStore((s) => s.submit);
+  const paymentContent = useOnboardingStore((s) => s.paymentContent);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const handleSubmit = async () => {
+    setSubmitError(null);
+    try {
+      await submit();
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : (language === "es" ? "Error al enviar. Intenta nuevamente." : "Submission failed. Please try again."));
+    }
+  };
 
   const companion = data.companion;
+  const paymentMethods = buildPaymentMethods(paymentContent, language);
   const methodName = paymentMethods.find((m) => m.id === data.paymentMethod)?.label ?? t("stepConfirm.emptyField", language);
 
   return (
@@ -41,6 +54,12 @@ export function StepConfirm() {
             <Row label={t("stepPersonal.companionEmailLabel", language)} value={companion.email} />
             <Row label={t("stepPersonal.companionPhoneLabel", language)} value={companion.phone} />
             <Row label={t("stepPersonal.companionWhatsappLabel", language)} value={companion.wantsWhatsApp ? t("shared.yes", language) : t("shared.no", language)} />
+            <Row
+              label={t("stepDocuments.companionDietaryTitle", language)}
+              value={(companion.dietaryRestrictions?.length ?? 0) > 0 ? companion.dietaryRestrictions!.join(", ") : t("stepConfirm.emptyField", language)}
+            />
+            <Row label={t("stepDocuments.companionProfilePhotoLabel", language)} value={companion.profilePhoto ? companion.profilePhoto.name : t("stepConfirm.emptyField", language)} />
+            <Row label={t("stepDocuments.companionBioLabel", language)} value={companion.bio} />
           </dl>
         ) : (
           <p className="text-sm text-black/50">{t("stepConfirm.noCompanion", language)}</p>
@@ -84,9 +103,12 @@ export function StepConfirm() {
       </div>
 
       <div className="pt-4 border-t border-hairline">
+        {submitError && (
+          <p className="text-sm text-red-500 mb-3 leading-relaxed">{submitError}</p>
+        )}
         <button
           type="button"
-          onClick={submit}
+          onClick={handleSubmit}
           disabled={isSubmitting || !data.acceptedTerms}
           className="w-full py-3.5 px-6 bg-ink text-canvas text-sm uppercase tracking-[0.15em] hover:bg-ink/90 transition-colors duration-300 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3"
         >

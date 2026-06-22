@@ -50,13 +50,19 @@ export function MarqueeSection({ slots }: MarqueeSectionProps) {
   }, [isOpen]);
 
   const track = [...slots, ...slots];
-  const dur = Math.max(slots.length * 3, 20);
+  const dur = Math.max(slots.length * 1.8, 14);
+  const durMobile = Math.max(slots.length * 0.6, 4);
 
   return (
     <>
-      <div className="overflow-hidden py-6 md:py-8">
+      {/* ── Desktop: marquee ───────────────────────────────────── */}
+      <div className="hidden md:block overflow-hidden py-6 md:py-8">
         <style>{`
           @keyframes marquee-scroll {
+            from { transform: translate3d(0, 0, 0); }
+            to   { transform: translate3d(-50%, 0, 0); }
+          }
+          @keyframes marquee-scroll-mobile {
             from { transform: translate3d(0, 0, 0); }
             to   { transform: translate3d(-50%, 0, 0); }
           }
@@ -66,6 +72,11 @@ export function MarqueeSection({ slots }: MarqueeSectionProps) {
             backface-visibility: hidden;
           }
           .marquee-track:hover { animation-play-state: paused; }
+          .marquee-track-mobile {
+            animation: marquee-scroll-mobile ${durMobile}s linear infinite;
+            will-change: transform;
+            backface-visibility: hidden;
+          }
         `}</style>
 
         <div className="marquee-track flex gap-3">
@@ -76,7 +87,7 @@ export function MarqueeSection({ slots }: MarqueeSectionProps) {
             return (
               <div
                 key={i}
-                className={`shrink-0 h-[34vh] md:h-[40vh] w-[24rem] md:w-[30rem] overflow-hidden group/card relative ${clickable ? "cursor-zoom-in" : ""}`}
+                className={`shrink-0 h-[40vh] w-[30rem] overflow-hidden group/card relative ${clickable ? "cursor-zoom-in" : ""}`}
                 style={!src ? { background: PLACEHOLDERS[i % PLACEHOLDERS.length] } : undefined}
                 onClick={() => clickable && setLightboxIdx(realIdx)}
               >
@@ -98,6 +109,34 @@ export function MarqueeSection({ slots }: MarqueeSectionProps) {
                       </svg>
                     </div>
                   </>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Mobile: marquee full-width ────────────────────────── */}
+      <div className="md:hidden overflow-hidden">
+        <div className="marquee-track-mobile flex gap-0">
+          {track.map((src, i) => {
+            const realIdx = src ? realPhotos.indexOf(src) : -1;
+            const clickable = realIdx !== -1;
+
+            return (
+              <div
+                key={i}
+                className={`shrink-0 w-screen h-[56vw] overflow-hidden relative ${clickable ? "cursor-zoom-in" : ""}`}
+                style={!src ? { background: PLACEHOLDERS[i % PLACEHOLDERS.length] } : undefined}
+                onClick={() => clickable && setLightboxIdx(realIdx)}
+              >
+                {src && (
+                  <img
+                    src={src}
+                    alt=""
+                    draggable="false"
+                    className="absolute inset-0 h-full w-full object-cover select-none"
+                  />
                 )}
               </div>
             );

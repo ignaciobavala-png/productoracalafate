@@ -61,19 +61,28 @@ export default async function TripPage({
     return asset?.url ?? "";
   });
 
+  const footerLang = "es";
+  const companyName = contentMap.footer?.company_name?.[footerLang];
+  const contactEmail = contentMap.footer?.company_email?.[footerLang];
+
   return (
     <>
-      <Navbar />
+      <Navbar companyName={companyName} />
       <main>
         <HeroSection mediaSrc={heroMediaUrl} content={contentMap.hero} />
         <MarqueeSection slots={gallerySlots} />
         <ManifestoSection photoSrc={manifestoPhotoUrl} content={contentMap.manifesto} />
         <ProgramSection content={contentMap.program} items={programItems ?? []} />
         <PricingSection content={contentMap.pricing} />
-        <OnboardingPage tripSlug={slug} initialCode={code} />
+        <OnboardingPage
+          tripSlug={slug}
+          initialCode={code}
+          paymentContent={contentMap.payment ?? {}}
+          footerContent={contentMap.footer ?? {}}
+        />
       </main>
       <Footer content={contentMap.footer} />
-      <InvitationModal tripSlug={slug} initialCode={code} />
+      <InvitationModal tripSlug={slug} initialCode={code} contactEmail={contactEmail} />
     </>
   );
 }

@@ -4,13 +4,14 @@ import { AssetUploader } from './AssetUploader'
 import { ProgramAdmin } from './ProgramAdmin'
 
 // Orden de secciones en admin (coincide con homepage)
-const SECTION_ORDER = ['hero', 'manifesto', 'pricing', 'footer']
+const SECTION_ORDER = ['hero', 'manifesto', 'pricing', 'payment', 'footer']
 
 const SECTION_LABELS: Record<string, string> = {
   hero:      'Hero — encabezado principal',
   manifesto: 'Manifiesto — sección editorial',
   pricing:   'Tarifa — precio e incluidos',
-  footer:    'Footer — pie de página',
+  payment:   'Métodos de pago — labels, datos bancarios y contacto',
+  footer:    'Footer — pie de página (nombre empresa, email, teléfono, ubicación)',
 }
 
 // Assets que van embebidos dentro de cada sección de texto

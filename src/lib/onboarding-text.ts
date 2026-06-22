@@ -174,6 +174,11 @@ export const onboardingText = {
     dropzoneDragging: { es: "Soltable acá", en: "Drop it here" },
     dropzoneSelected: { es: "Archivo seleccionado:", en: "File selected:" },
     dropzoneRemove: { es: "Quitar", en: "Remove" },
+    companionSection: { es: "Documentos del acompañante", en: "Companion documents" },
+    companionDietaryTitle: { es: "¿El acompañante tiene alguna dieta, alergia o restricción alimentaria?", en: "Does the companion have any diet, allergy, or dietary restriction?" },
+    companionProfilePhotoLabel: { es: "Foto del acompañante (tamaño carnet)", en: "Companion photo (passport size)" },
+    companionBioLabel: { es: "Breve biografía del acompañante", en: "Companion brief bio" },
+    companionBioPlaceholder: { es: "Máximo 10 líneas. Compartí quién es y qué lo trae acá.", en: "Maximum 10 lines. Share who they are and what brings them here." },
   },
 
   stepPayment: {

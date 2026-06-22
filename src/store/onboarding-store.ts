@@ -6,6 +6,9 @@ import { uploadFile } from "@/lib/supabase/storage";
 import { useInvitationStore } from "@/store/invitation-store";
 import { consumeInvitationCode } from "@/app/actions/consume-invitation";
 import { updateGuestUrl } from "@/app/actions/update-guest-urls";
+import { updateCompanionUrl } from "@/app/actions/update-companion-url";
+
+type ContentMap = Record<string, { es: string; en: string }>
 
 interface OnboardingState {
   step: number;
@@ -13,11 +16,14 @@ interface OnboardingState {
   data: Partial<GuestOnboardingData>;
   isSubmitting: boolean;
   isSubmitted: boolean;
+  paymentContent: ContentMap;
+  footerContent: ContentMap;
 
   setStep: (step: number) => void;
   nextStep: () => void;
   prevStep: () => void;
   setLanguage: (lang: Language) => void;
+  initContent: (payment: ContentMap, footer: ContentMap) => void;
   updateField: <K extends keyof GuestOnboardingData>(
     key: K,
     value: GuestOnboardingData[K]
@@ -30,6 +36,8 @@ interface OnboardingState {
   setProfilePhoto: (file: File | null) => void;
   setPaymentProof: (file: File | null) => void;
   toggleDietary: (restriction: string) => void;
+  toggleCompanionDietary: (restriction: string) => void;
+  setCompanionProfilePhoto: (file: File | null) => void;
   submit: () => Promise<void>;
   reset: () => void;
 }
@@ -41,6 +49,10 @@ const emptyCompanion: CompanionData = {
   email: "",
   phone: "",
   wantsWhatsApp: false,
+  bio: "",
+  dietaryRestrictions: [],
+  dietaryDetails: "",
+  profilePhoto: null,
 };
 
 const initialData: Partial<GuestOnboardingData> = {
@@ -69,8 +81,11 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
   data: { ...initialData },
   isSubmitting: false,
   isSubmitted: false,
+  paymentContent: {},
+  footerContent: {},
 
   setStep: (step) => set({ step }),
+  initContent: (payment, footer) => set({ paymentContent: payment, footerContent: footer }),
   nextStep: () =>
     set((s) => ({ step: Math.min(s.step + 1, 5) })),
   prevStep: () =>
@@ -124,8 +139,36 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
       };
     }),
 
+  toggleCompanionDietary: (restriction) =>
+    set((s) => {
+      const companion = s.data.companion ?? { ...emptyCompanion };
+      const current = companion.dietaryRestrictions ?? [];
+
+      if (restriction === "Ninguna") {
+        return { data: { ...s.data, companion: { ...companion, dietaryRestrictions: ["Ninguna"] } } };
+      }
+
+      const withoutNone = current.filter((r) => r !== "Ninguna");
+
+      if (withoutNone.includes(restriction)) {
+        return { data: { ...s.data, companion: { ...companion, dietaryRestrictions: withoutNone.filter((r) => r !== restriction) } } };
+      }
+
+      return { data: { ...s.data, companion: { ...companion, dietaryRestrictions: [...withoutNone, restriction] } } };
+    }),
+
+  setCompanionProfilePhoto: (file) =>
+    set((s) => ({
+      data: {
+        ...s.data,
+        companion: { ...(s.data.companion ?? { ...emptyCompanion }), profilePhoto: file },
+      },
+    })),
+
   submit: async () => {
-    const { data } = useOnboardingStore.getState();
+    const state = useOnboardingStore.getState();
+    if (state.isSubmitting || state.isSubmitted) return;
+    const { data } = state;
     set({ isSubmitting: true });
 
     try {
@@ -155,7 +198,12 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
         .select("id")
         .single();
 
-      if (guestError) throw guestError;
+      if (guestError) {
+        if (guestError.code === "23505") {
+          throw new Error("Este email ya fue registrado para este viaje.");
+        }
+        throw guestError;
+      }
       const guestId = guest.id;
 
       // Marcar la invitación como usada
@@ -192,20 +240,30 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
 
       // Insertar acompañante si corresponde
       if (data.isComingAlone === false && data.companion?.fullName) {
-        uploads.push(
-          supabase
-            .from("companions")
-            .insert({
-              guest_id: guestId,
-              full_name: data.companion.fullName,
-              nationality: data.companion.nationality || null,
-              date_of_birth: data.companion.dateOfBirth || null,
-              email: data.companion.email || null,
-              phone: data.companion.phone || null,
-              wants_whatsapp: data.companion.wantsWhatsApp ?? false,
-            })
-            .then(() => undefined) as Promise<void>
-        );
+        const { data: companionRow } = await supabase
+          .from("companions")
+          .insert({
+            guest_id: guestId,
+            full_name: data.companion.fullName,
+            nationality: data.companion.nationality || null,
+            date_of_birth: data.companion.dateOfBirth || null,
+            email: data.companion.email || null,
+            phone: data.companion.phone || null,
+            wants_whatsapp: data.companion.wantsWhatsApp ?? false,
+            bio: data.companion.bio ?? "",
+            dietary_restrictions: data.companion.dietaryRestrictions ?? [],
+            dietary_details: data.companion.dietaryDetails ?? "",
+          })
+          .select("id")
+          .single();
+
+        if (companionRow?.id && data.companion.profilePhoto) {
+          const ext = data.companion.profilePhoto.name.split(".").pop() ?? "jpg";
+          uploads.push(
+            uploadFile("guest-profile-photos", `${guestId}/companion-profile.${ext}`, data.companion.profilePhoto)
+              .then((path) => updateCompanionUrl(companionRow.id, "profile_photo_url", path))
+          );
+        }
       }
 
       await Promise.all(uploads);

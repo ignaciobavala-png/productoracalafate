@@ -11,9 +11,10 @@ import { logInvitationRequest } from "@/app/actions/log-invitation-request";
 interface Props {
   tripSlug: string;
   initialCode?: string;
+  contactEmail?: string;
 }
 
-export function InvitationModal({ tripSlug, initialCode }: Props) {
+export function InvitationModal({ tripSlug, initialCode, contactEmail }: Props) {
   const { isOpen, close, unlock } = useInvitationStore();
   const language = useOnboardingStore((s) => s.language);
   const [code, setCode] = useState(initialCode ?? "");
@@ -38,7 +39,7 @@ export function InvitationModal({ tripSlug, initialCode }: Props) {
     setIsValidating(true);
 
     try {
-      const result = await validateInvitationCode(code, tripSlug);
+      const result = await validateInvitationCode(code, tripSlug, trimmedEmail);
 
       logInvitationRequest(code.trim().toUpperCase(), trimmedEmail);
 
@@ -169,10 +170,10 @@ export function InvitationModal({ tripSlug, initialCode }: Props) {
             <p className="mt-6 text-xs text-black text-center leading-relaxed">
               {t("invitation.footer", language)}{" "}
               <a
-                href="mailto:calafatesummits@gmail.com"
+                href={`mailto:${contactEmail ?? 'calafatesummits@gmail.com'}`}
                 className="underline underline-offset-4 hover:text-primary transition-colors"
               >
-                calafatesummits@gmail.com
+                {contactEmail ?? 'calafatesummits@gmail.com'}
               </a>
             </p>
           </motion.div>

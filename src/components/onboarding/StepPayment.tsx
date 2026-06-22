@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useOnboardingStore } from "@/store/onboarding-store";
 import { t } from "@/lib/onboarding-text";
-import { paymentMethods, CARD_PAYMENT_METHODS } from "@/lib/mock-data";
+import { buildPaymentMethods, CARD_PAYMENT_METHODS } from "@/lib/mock-data";
 import { TermsModal } from "./TermsModal";
 
 function CopyButton({ value }: { value: string }) {
@@ -52,10 +52,17 @@ export function StepPayment() {
   const updateField = useOnboardingStore((s) => s.updateField);
   const setPaymentProof = useOnboardingStore((s) => s.setPaymentProof);
   const language = useOnboardingStore((s) => s.language);
+  const paymentContent = useOnboardingStore((s) => s.paymentContent);
+  const footerContent = useOnboardingStore((s) => s.footerContent);
   const [termsOpen, setTermsOpen] = useState(false);
 
+  const paymentMethods = buildPaymentMethods(paymentContent, language);
   const selected = paymentMethods.find((m) => m.id === data.paymentMethod);
   const isCardMethod = selected ? CARD_PAYMENT_METHODS.includes(selected.id) : false;
+
+  const contactEmail = footerContent.company_email?.[language] ?? 'calafatesummits@gmail.com';
+  const contactPhone = footerContent.company_phone?.[language] ?? '+56 9 5698 8343';
+  const contactName = footerContent.company_name?.[language] ?? 'Productora Calafate';
 
   return (
     <div className="space-y-8">
@@ -214,7 +221,9 @@ export function StepPayment() {
       />
 
       <div className="text-[11px] text-black/50 leading-relaxed">
-        {t("stepPayment.contactLabel", language)}
+        {language === "es"
+          ? `Para cualquier consulta adicional, contacta a ${contactName} — ${contactPhone} / ${contactEmail}`
+          : `For any questions, contact ${contactName} — ${contactPhone} / ${contactEmail}`}
       </div>
     </div>
   );

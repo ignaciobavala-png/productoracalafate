@@ -4,8 +4,15 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { headers } from 'next/headers'
 
-function generateCode() {
-  return Math.random().toString(36).substring(2, 8).toUpperCase()
+// Excluye caracteres ambiguos (0/O, 1/I) para evitar confusión al leer en voz alta
+const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+
+function generateCode(): string {
+  let code = ''
+  for (let i = 0; i < 6; i++) {
+    code += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]
+  }
+  return code
 }
 
 export type InvitationResult = {

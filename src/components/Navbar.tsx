@@ -16,7 +16,7 @@ const NAV_ITEMS = [
   { key: "nav.register",  href: "#onboarding" },
 ] as const;
 
-export function Navbar() {
+export function Navbar({ companyName }: { companyName?: string }) {
   const [scrolled, setScrolled] = useState(false);
   const language = useOnboardingStore((s) => s.language);
 
@@ -52,7 +52,7 @@ export function Navbar() {
                   : "text-canvas hover:text-primary"
               }`}
             >
-              Productora Calafate
+              {companyName ?? "Productora Calafate"}
             </Link>
 
             <ul className="hidden md:flex items-center gap-6">

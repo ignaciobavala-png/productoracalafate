@@ -13,3 +13,21 @@ export async function updateGuestStatus(
   revalidatePath(`/admin/guests/${guestId}`)
   revalidatePath('/admin/guests')
 }
+
+export async function exportGuestsData() {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('guests')
+    .select(`
+      id, full_name, email, nationality, date_of_birth, phone,
+      wants_whatsapp, is_coming_alone, dietary_restrictions, dietary_details,
+      bio, needs_invoice, payment_method_id, accepted_terms, status,
+      submitted_at, invitation_code,
+      companions (full_name, email, nationality, date_of_birth, phone, dietary_restrictions)
+    `)
+    .order('submitted_at', { ascending: false })
+
+  if (error) throw error
+  return data ?? []
+}
+

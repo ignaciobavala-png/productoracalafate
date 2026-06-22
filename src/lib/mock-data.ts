@@ -31,62 +31,33 @@ export const pricing: PricingInfo = {
 
 export const CARD_PAYMENT_METHODS = ['card-cl', 'card-intl'];
 
-export const paymentMethods: PaymentMethod[] = [
-  {
-    id: "transfer-clp",
-    label: "Transferencia bancaria en Chile (Pesos)",
-    currency: "CLP",
-    details: [
-      "Productora Calafate SPA",
-      "RUT: 78.102754-5",
-      "Banco Bice",
-      "Cuenta Corriente: 12-02013-9",
-      "calafatesummits@gmail.com",
-    ],
-  },
-  {
-    id: "transfer-usd",
-    label: "Transferencia bancaria en Chile (Dólares)",
-    currency: "USD",
-    details: [
-      "Productora Calafate SPA",
-      "RUT: 78.102754-5",
-      "Banco Bice",
-      "Cuenta Corriente: 013-12-04076-6",
-      "andreagerardi@yahoo.com",
-    ],
-  },
-  {
-    id: "transfer-us",
-    label: "Transferencia bancaria en EEUU",
-    currency: "USD",
-    details: [
-      "Account Holder: Calafate SPA",
-      "Account Number: 8333242022",
-      "Routing Number: 026073150",
-      "Swift / BIC: CMFGUS33",
-      "Bank: Community Federal Savings Bank",
-      "Bank Address: 5 Penn Plaza, 14th Floor, New York, NY 10001, US",
-      "Company Address: Av. Andres Bello 2711, piso 16. Las Condes, Santiago de Chile",
-    ],
-  },
-  {
-    id: "global66",
-    label: "Global66",
-    currency: "USD",
-    details: ["Calafate SPA", "@CALAFCL002"],
-  },
-  {
-    id: "card-cl",
-    label: "Tarjeta de crédito (Chile)",
-    currency: "CLP",
-    details: ["Solicitar link de pago Transbank a calafatesummits@gmail.com"],
-  },
-  {
-    id: "card-intl",
-    label: "Tarjeta de crédito (Fuera de Chile)",
-    currency: "USD",
-    details: ["Solicitar link de pago a calafatesummits@gmail.com"],
-  },
-];
+// Metadata estructural de los métodos (IDs y monedas nunca cambian)
+const PAYMENT_METHODS_META = [
+  { id: 'transfer-clp', currency: 'CLP', key: 'transfer_clp' },
+  { id: 'transfer-usd', currency: 'USD', key: 'transfer_usd' },
+  { id: 'transfer-us',  currency: 'USD', key: 'transfer_us'  },
+  { id: 'global66',     currency: 'USD', key: 'global66'     },
+  { id: 'card-cl',      currency: 'CLP', key: 'card_cl'      },
+  { id: 'card-intl',    currency: 'USD', key: 'card_intl'    },
+] as const;
+
+export function buildPaymentMethods(
+  content: Record<string, { es: string; en: string }>,
+  lang: 'es' | 'en'
+): PaymentMethod[] {
+  return PAYMENT_METHODS_META.map((meta) => ({
+    id: meta.id,
+    currency: meta.currency,
+    label: content[`${meta.key}_label`]?.[lang] ?? meta.id,
+    details: (content[`${meta.key}_details`]?.[lang] ?? '').split('\n').filter(Boolean),
+  }));
+}
+
+// Fallback estático para contextos sin acceso al DB (ej. StepConfirm sin content)
+export const paymentMethods: PaymentMethod[] = PAYMENT_METHODS_META.map((meta) => ({
+  id: meta.id,
+  currency: meta.currency,
+  label: meta.id,
+  details: [],
+}));
 
