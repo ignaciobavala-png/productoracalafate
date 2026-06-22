@@ -32,6 +32,10 @@ export interface CompanionData {
   email: string;
   phone: string;
   wantsWhatsApp: boolean;
+  bio: string;
+  dietaryRestrictions: string[];
+  dietaryDetails: string;
+  profilePhoto: File | null;
 }
 
 export interface GuestOnboardingData {

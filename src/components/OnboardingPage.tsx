@@ -221,7 +221,12 @@ export function OnboardingPage({ tripSlug, initialCode }: OnboardingPageProps) {
     data.idPhoto &&
     data.profilePhoto &&
     data.bio?.trim() &&
-    (data.dietaryRestrictions?.length ?? 0) > 0
+    (data.dietaryRestrictions?.length ?? 0) > 0 &&
+    (data.isComingAlone !== false || (
+      data.companion?.profilePhoto &&
+      data.companion?.bio?.trim() &&
+      (data.companion?.dietaryRestrictions?.length ?? 0) > 0
+    ))
   );
 
   const isStep3Ready =

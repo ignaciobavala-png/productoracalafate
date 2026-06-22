@@ -52,6 +52,12 @@ export function StepConfirm() {
             <Row label={t("stepPersonal.companionEmailLabel", language)} value={companion.email} />
             <Row label={t("stepPersonal.companionPhoneLabel", language)} value={companion.phone} />
             <Row label={t("stepPersonal.companionWhatsappLabel", language)} value={companion.wantsWhatsApp ? t("shared.yes", language) : t("shared.no", language)} />
+            <Row
+              label={t("stepDocuments.companionDietaryTitle", language)}
+              value={(companion.dietaryRestrictions?.length ?? 0) > 0 ? companion.dietaryRestrictions!.join(", ") : t("stepConfirm.emptyField", language)}
+            />
+            <Row label={t("stepDocuments.companionProfilePhotoLabel", language)} value={companion.profilePhoto ? companion.profilePhoto.name : t("stepConfirm.emptyField", language)} />
+            <Row label={t("stepDocuments.companionBioLabel", language)} value={companion.bio} />
           </dl>
         ) : (
           <p className="text-sm text-black/50">{t("stepConfirm.noCompanion", language)}</p>
