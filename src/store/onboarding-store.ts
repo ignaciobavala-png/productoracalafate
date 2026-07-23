@@ -3,10 +3,21 @@ import type { GuestOnboardingData, CompanionData } from "@/types";
 import type { Language } from "@/lib/onboarding-text";
 import { createClient } from "@/lib/supabase/client";
 import { uploadFile } from "@/lib/supabase/storage";
+import { compressImage } from "@/lib/compress-image";
 import { useInvitationStore } from "@/store/invitation-store";
 import { consumeInvitationCode } from "@/app/actions/consume-invitation";
 import { updateGuestUrl } from "@/app/actions/update-guest-urls";
 import { updateCompanionUrl } from "@/app/actions/update-companion-url";
+import { rollbackGuestSubmission } from "@/app/actions/rollback-guest";
+
+async function toUploadable(file: File): Promise<File> {
+  if (!file.type.startsWith("image/")) return file;
+  try {
+    return await compressImage(file);
+  } catch {
+    return file;
+  }
+}
 
 type ContentMap = Record<string, { es: string; en: string }>
 
@@ -211,62 +222,78 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
         await consumeInvitationCode(validatedCode, guestId)
       }
 
-      // Subir fotos en paralelo
-      const uploads: Promise<void>[] = [];
+      try {
+        // Subir fotos en paralelo (comprimidas antes de subir)
+        const uploads: Promise<void>[] = [];
 
-      if (data.idPhoto) {
-        const ext = data.idPhoto.name.split(".").pop() ?? "jpg";
-        uploads.push(
-          uploadFile("guest-id-photos", `${guestId}/id.${ext}`, data.idPhoto)
-            .then((path) => updateGuestUrl(guestId, "id_photo_url", path))
-        );
-      }
-
-      if (data.profilePhoto) {
-        const ext = data.profilePhoto.name.split(".").pop() ?? "jpg";
-        uploads.push(
-          uploadFile("guest-profile-photos", `${guestId}/profile.${ext}`, data.profilePhoto)
-            .then((path) => updateGuestUrl(guestId, "profile_photo_url", path))
-        );
-      }
-
-      if (data.paymentProof) {
-        const ext = data.paymentProof.name.split(".").pop() ?? "jpg";
-        uploads.push(
-          uploadFile("guest-payment-proofs", `${guestId}/comprobante.${ext}`, data.paymentProof)
-            .then((path) => updateGuestUrl(guestId, "payment_proof_url", path))
-        );
-      }
-
-      // Insertar acompañante si corresponde
-      if (data.isComingAlone === false && data.companion?.fullName) {
-        const { data: companionRow } = await supabase
-          .from("companions")
-          .insert({
-            guest_id: guestId,
-            full_name: data.companion.fullName,
-            nationality: data.companion.nationality || null,
-            date_of_birth: data.companion.dateOfBirth || null,
-            email: data.companion.email || null,
-            phone: data.companion.phone || null,
-            wants_whatsapp: data.companion.wantsWhatsApp ?? false,
-            bio: data.companion.bio ?? "",
-            dietary_restrictions: data.companion.dietaryRestrictions ?? [],
-            dietary_details: data.companion.dietaryDetails ?? "",
-          })
-          .select("id")
-          .single();
-
-        if (companionRow?.id && data.companion.profilePhoto) {
-          const ext = data.companion.profilePhoto.name.split(".").pop() ?? "jpg";
+        if (data.idPhoto) {
+          const idPhoto = await toUploadable(data.idPhoto);
+          const ext = idPhoto.name.split(".").pop() ?? "jpg";
           uploads.push(
-            uploadFile("guest-profile-photos", `${guestId}/companion-profile.${ext}`, data.companion.profilePhoto)
-              .then((path) => updateCompanionUrl(companionRow.id, "profile_photo_url", path))
+            uploadFile("guest-id-photos", `${guestId}/id.${ext}`, idPhoto)
+              .then((path) => updateGuestUrl(guestId, "id_photo_url", path))
           );
         }
+
+        if (data.profilePhoto) {
+          const profilePhoto = await toUploadable(data.profilePhoto);
+          const ext = profilePhoto.name.split(".").pop() ?? "jpg";
+          uploads.push(
+            uploadFile("guest-profile-photos", `${guestId}/profile.${ext}`, profilePhoto)
+              .then((path) => updateGuestUrl(guestId, "profile_photo_url", path))
+          );
+        }
+
+        if (data.paymentProof) {
+          const paymentProof = await toUploadable(data.paymentProof);
+          const ext = paymentProof.name.split(".").pop() ?? "jpg";
+          uploads.push(
+            uploadFile("guest-payment-proofs", `${guestId}/comprobante.${ext}`, paymentProof)
+              .then((path) => updateGuestUrl(guestId, "payment_proof_url", path))
+          );
+        }
+
+        // Insertar acompañante si corresponde
+        if (data.isComingAlone === false && data.companion?.fullName) {
+          const { data: companionRow, error: companionError } = await supabase
+            .from("companions")
+            .insert({
+              guest_id: guestId,
+              full_name: data.companion.fullName,
+              nationality: data.companion.nationality || null,
+              date_of_birth: data.companion.dateOfBirth || null,
+              email: data.companion.email || null,
+              phone: data.companion.phone || null,
+              wants_whatsapp: data.companion.wantsWhatsApp ?? false,
+              bio: data.companion.bio ?? "",
+              dietary_restrictions: data.companion.dietaryRestrictions ?? [],
+              dietary_details: data.companion.dietaryDetails ?? "",
+            })
+            .select("id")
+            .single();
+
+          if (companionError) throw companionError;
+
+          if (companionRow?.id && data.companion.profilePhoto) {
+            const companionPhoto = await toUploadable(data.companion.profilePhoto);
+            const ext = companionPhoto.name.split(".").pop() ?? "jpg";
+            uploads.push(
+              uploadFile("guest-profile-photos", `${guestId}/companion-profile.${ext}`, companionPhoto)
+                .then((path) => updateCompanionUrl(companionRow.id, "profile_photo_url", path))
+            );
+          }
+        }
+
+        await Promise.all(uploads);
+      } catch (innerErr) {
+        // Algo falló después de crear el guest (ej. foto supera el límite
+        // del bucket). Revertimos el insert para que el usuario pueda
+        // reintentar con el mismo email en vez de quedar bloqueado por
+        // el constraint de email único.
+        await rollbackGuestSubmission(guestId, validatedCode ?? null);
+        throw innerErr;
       }
 
-      await Promise.all(uploads);
       set({ isSubmitting: false, isSubmitted: true });
     } catch (err) {
       console.error("[onboarding] submit error:", err);
