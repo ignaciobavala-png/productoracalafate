@@ -103,14 +103,34 @@ export async function addProgramDay(tripId: string, tripSlug: string) {
   revalidate(tripSlug)
 }
 
-export async function updateDayPhoto(tripId: string, dayNumber: number, photoUrl: string, tripSlug: string) {
+export async function updateDayPhoto(
+  tripId: string,
+  dayNumber: number,
+  photoUrl: string,
+  tripSlug: string,
+  previousUrl?: string
+): Promise<{ error?: string }> {
   const supabase = createAdminClient()
-  await supabase
+  const { error } = await supabase
     .from('program_items')
     .update({ day_photo_url: photoUrl })
     .eq('trip_id', tripId)
     .eq('day_number', dayNumber)
+
+  if (error) return { error: `No se pudo guardar la foto: ${error.message}` }
+
+  // El archivo anterior queda huérfano en el bucket si no se borra acá.
+  const marker = '/object/public/site-assets/'
+  const idx = previousUrl?.indexOf(marker) ?? -1
+  if (previousUrl && idx !== -1) {
+    const oldPath = decodeURIComponent(previousUrl.slice(idx + marker.length).split('?')[0])
+    if (oldPath && !photoUrl.endsWith(oldPath)) {
+      await supabase.storage.from('site-assets').remove([oldPath])
+    }
+  }
+
   revalidate(tripSlug)
+  return {}
 }
 
 export async function deleteProgramDay(tripId: string, dayNumber: number, tripSlug: string) {

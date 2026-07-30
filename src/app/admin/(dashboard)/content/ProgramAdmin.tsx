@@ -277,14 +277,17 @@ function DayPhotoUploader({
       setSizeInfo({ original: file.size, compressed: compressed.size })
 
       const supabase = createClient()
-      const path = `program/${tripId}/day-${dayNumber}.webp`
+      // Timestamp en el path: con un path fijo la URL no cambia y el browser
+      // sigue mostrando la foto vieja aunque el archivo se haya reemplazado.
+      const path = `program/${tripId}/day-${dayNumber}-${Date.now()}.webp`
       const { error: uploadError } = await supabase.storage
         .from('site-assets')
-        .upload(path, compressed, { upsert: true, cacheControl: '3600', contentType: 'image/webp' })
+        .upload(path, compressed, { cacheControl: '31536000', contentType: 'image/webp' })
       if (uploadError) throw uploadError
 
       const { data: { publicUrl } } = supabase.storage.from('site-assets').getPublicUrl(path)
-      await updateDayPhoto(tripId, dayNumber, publicUrl, tripSlug)
+      const { error: saveError } = await updateDayPhoto(tripId, dayNumber, publicUrl, tripSlug, url)
+      if (saveError) throw new Error(saveError)
       setUrl(publicUrl)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al subir')
@@ -302,7 +305,7 @@ function DayPhotoUploader({
         <input
           ref={inputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp"
+          accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
           className="hidden"
           onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = '' }}
         />

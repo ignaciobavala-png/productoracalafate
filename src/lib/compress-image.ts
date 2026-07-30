@@ -35,7 +35,14 @@ export async function compressImage(
 
     img.onerror = () => {
       URL.revokeObjectURL(objectUrl)
-      reject(new Error("Image load failed"))
+      // Chrome y Firefox no saben decodificar HEIC/HEIF (el formato por defecto
+      // de las fotos de iPhone), así que el mensaje tiene que decir qué hacer.
+      reject(
+        new Error(
+          `El navegador no pudo abrir "${file.name}". Si es una foto de iPhone (.HEIC), ` +
+            `guardala o exportala como JPG y volvé a subirla.`
+        )
+      )
     }
 
     img.src = objectUrl

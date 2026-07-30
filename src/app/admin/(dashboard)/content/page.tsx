@@ -4,11 +4,12 @@ import { AssetUploader } from './AssetUploader'
 import { ProgramAdmin } from './ProgramAdmin'
 
 // Orden de secciones en admin (coincide con homepage)
-const SECTION_ORDER = ['hero', 'manifesto', 'pricing', 'payment', 'footer']
+const SECTION_ORDER = ['hero', 'manifesto', 'program', 'pricing', 'payment', 'footer']
 
 const SECTION_LABELS: Record<string, string> = {
   hero:      'Hero — encabezado principal',
   manifesto: 'Manifiesto — sección editorial',
+  program:   'Programa — título y bajada de la sección',
   pricing:   'Tarifa — precio e incluidos',
   payment:   'Métodos de pago — labels, datos bancarios y contacto',
   footer:    'Footer — pie de página (nombre empresa, email, teléfono, ubicación)',
@@ -130,6 +131,8 @@ export default async function ContentPage({
                       key={asset.id}
                       assetKey={asset.key}
                       assetId={asset.id}
+                      tripId={selectedTrip.id}
+                      tripSlug={selectedTrip.slug}
                       currentUrl={asset.url}
                       type="image"
                       label={asset.label ?? asset.key}
@@ -193,6 +196,8 @@ export default async function ContentPage({
                       <AssetUploader
                         assetKey={asset.key}
                         assetId={asset.id}
+                        tripId={selectedTrip.id}
+                        tripSlug={selectedTrip.slug}
                         currentUrl={asset.url}
                         type={asset.key === 'hero_video' ? 'media' : asset.type as 'video' | 'image'}
                         label={asset.label ?? asset.key}

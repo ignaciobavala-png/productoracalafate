@@ -4,10 +4,13 @@ import { useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { compressImage, formatBytes } from '@/lib/compress-image'
 import { compressVideo } from '@/lib/compress-video'
+import { setAssetUrl } from './actions'
 
 interface Props {
   assetKey: string
   assetId: string
+  tripId: string
+  tripSlug: string
   currentUrl: string
   type: 'video' | 'image' | 'media'
   label: string
@@ -19,7 +22,12 @@ interface SizeInfo {
   compressed: number
 }
 
-export function AssetUploader({ assetKey, assetId, currentUrl, type, label, compact }: Props) {
+// Las fotos de iPhone/Mac son .heic: sin esto el selector de archivos las
+// muestra en gris y no se pueden ni elegir.
+const IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif'
+const VIDEO_ACCEPT = 'video/mp4,video/webm,video/quicktime,.mov'
+
+export function AssetUploader({ assetKey, assetId, tripId, tripSlug, currentUrl, type, label, compact }: Props) {
   const [uploading, setUploading] = useState(false)
   const [url, setUrl] = useState(currentUrl)
   const [error, setError] = useState<string | null>(null)
@@ -28,10 +36,10 @@ export function AssetUploader({ assetKey, assetId, currentUrl, type, label, comp
   const inputRef = useRef<HTMLInputElement>(null)
 
   const accept = type === 'video'
-    ? 'video/mp4,video/webm,video/ogg'
+    ? VIDEO_ACCEPT
     : type === 'media'
-      ? 'video/mp4,video/webm,video/ogg,image/jpeg,image/png,image/webp'
-      : 'image/jpeg,image/png,image/webp'
+      ? `${VIDEO_ACCEPT},${IMAGE_ACCEPT}`
+      : IMAGE_ACCEPT
 
   async function handleFile(file: File) {
     setUploading(true)
@@ -45,8 +53,13 @@ export function AssetUploader({ assetKey, assetId, currentUrl, type, label, comp
       let fileToUpload = file
       let ext = file.name.split('.').pop() ?? (type === 'video' ? 'mp4' : 'jpg')
 
-      const fileIsVideo = file.type.startsWith('video/')
-      const fileIsImage = file.type.startsWith('image/')
+      // Algunos archivos (.heic, .mov) llegan con file.type vacío: hay que
+      // mirar la extensión o se suben crudos y el bucket los rechaza.
+      const nameExt = file.name.split('.').pop()?.toLowerCase() ?? ''
+      const fileIsVideo = file.type.startsWith('video/') || ['mp4', 'webm', 'mov', 'ogv'].includes(nameExt)
+      const fileIsImage = !fileIsVideo && (
+        file.type.startsWith('image/') || ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'].includes(nameExt)
+      )
 
       if (fileIsImage) {
         fileToUpload = await compressImage(file)
@@ -60,17 +73,21 @@ export function AssetUploader({ assetKey, assetId, currentUrl, type, label, comp
         setVideoProgress(null)
       }
 
-      const path = `${assetKey}.${ext}`
+      // El path lleva trip_id (si no, los viajes se pisan el archivo entre sí)
+      // y un timestamp (si no, la URL nueva es idéntica a la vieja y el browser
+      // y el CDN siguen sirviendo la foto anterior).
+      const path = `${tripId}/${assetKey}-${Date.now()}.${ext}`
 
       const { error: uploadError } = await supabase.storage
         .from('site-assets')
-        .upload(path, fileToUpload, { upsert: true, cacheControl: '3600', contentType: fileToUpload.type })
+        .upload(path, fileToUpload, { cacheControl: '31536000', contentType: fileToUpload.type })
 
       if (uploadError) throw uploadError
 
       const { data: { publicUrl } } = supabase.storage.from('site-assets').getPublicUrl(path)
 
-      await supabase.from('site_assets').update({ url: publicUrl }).eq('id', assetId)
+      const { error: saveError } = await setAssetUrl(assetId, publicUrl, tripSlug, url)
+      if (saveError) throw new Error(saveError)
 
       setUrl(publicUrl)
     } catch (err) {
@@ -82,8 +99,12 @@ export function AssetUploader({ assetKey, assetId, currentUrl, type, label, comp
 
   async function handleRemove() {
     if (!confirm('¿Eliminar este archivo?')) return
-    const supabase = createClient()
-    await supabase.from('site_assets').update({ url: '' }).eq('id', assetId)
+    setError(null)
+    const { error: saveError } = await setAssetUrl(assetId, '', tripSlug, url)
+    if (saveError) {
+      setError(saveError)
+      return
+    }
     setUrl('')
     setSizeInfo(null)
   }
