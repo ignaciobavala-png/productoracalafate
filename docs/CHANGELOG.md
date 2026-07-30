@@ -1,5 +1,57 @@
 # Changelog
 
+## 2026-07-30 — La clienta no podía cambiar fotos ni los textos del programa
+
+Reporte: *"las fotos y los textos no se pueden cambiar, no se ven en el frontend las fotos que sube"*.
+Diagnóstico sobre la DB de producción (`wenbcaogtgcsoghkoxdm`): los textos **sí**
+se guardaban (PATCH 204 en los logs), pero en `site_assets` todas las urls estaban
+vacías, el bucket `site-assets` tenía un único objeto del 17/06 y en los logs de
+storage no había **ni un POST de subida**. O sea: la subida fallaba en el browser
+antes de llegar a la red, y no era RLS.
+
+**Fotos — por qué no se podían ni elegir**
+
+- `accept="image/jpeg,image/png,image/webp"` dejaba los `.heic` (formato por
+  defecto de las fotos de iPhone/Mac) **en gris** en el selector de archivos.
+  Ahora se aceptan `.heic/.heif`; como Chrome y Firefox no los decodifican en
+  canvas, `compressImage` explica en `img.onerror` que hay que exportar como JPG.
+- `.heic` y `.mov` llegan con `file.type` vacío: el tipo se detecta también por
+  extensión, si no se subían crudos y el bucket los rechazaba por `allowed_mime_types`.
+
+**Fotos — por qué el cambio no se veía aunque la subida funcionara**
+
+- El path era `${assetKey}.${ext}`, sin `trip_id`: los dos viajes (Torres del
+  Paine y Rapa Nui) se pisaban el mismo archivo. Ahora `${tripId}/${assetKey}-${ts}.${ext}`.
+- Con `upsert` sobre un path fijo la URL pública quedaba **idéntica**: el UPDATE
+  no cambiaba la fila y el CDN/browser seguían sirviendo la imagen vieja. El
+  timestamp fuerza URL nueva y habilita `cacheControl` de un año.
+- El UPDATE de `site_assets` se hacía desde el cliente: descartaba el error y no
+  podía revalidar el sitio público. Pasa a la Server Action `setAssetUrl()`
+  (service_role), que revalida `/${slug}` y `/admin/content`, devuelve `{ error }`
+  para pintarlo en el panel y borra del bucket el archivo anterior. **La subida
+  sigue yendo directo del browser al storage** para no chocar con el límite de
+  body de las Server Actions (los videos pesan mucho más que 1 MB).
+
+**Textos**
+
+- `'program'` faltaba en `SECTION_ORDER` de `/admin/content`: sus 3 campos
+  (`label`, `title`, `description`) existían en la DB pero nunca aparecieron en
+  el panel. Ese era el "no puedo cambiar los textos".
+- `updateContent` descartaba el error del UPDATE: el panel decía "guardado"
+  aunque no hubiera guardado nada. Ahora lanza.
+
+**Borrado de fotos** (segunda tanda, mismo día)
+
+- `DayPhotoUploader` solo permitía subir o reemplazar: la única forma de sacar
+  una foto era **eliminar el día entero**. Agregado botón "Eliminar foto" + X
+  sobre la miniatura.
+- Los botones de borrar de la galería y de los assets de sección estaban en
+  `opacity-0` hasta el hover → invisibles en touch. Ahora se ven siempre.
+- `deleteProgramDay` borra también la foto del día del bucket: antes las filas se
+  iban y el archivo quedaba huérfano sin nada que lo referenciara.
+
+Commits: `5a361bf`, `f0f8f20`. Ambos en producción.
+
 ## 2026-06-15 — UX pago, contenido dinámico, RLS bug fix, cuenta admin, acordeones
 
 - **StepPayment reescrito:** `CopyButton` con clipboard y feedback visual, `ProofDropzone` (comprobante requerido solo para transferencias). Métodos de tarjeta muestran info box; transferencias muestran dropzone.
