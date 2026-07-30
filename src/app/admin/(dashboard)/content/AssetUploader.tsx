@@ -138,7 +138,7 @@ export function AssetUploader({ assetKey, assetId, tripId, tripSlug, currentUrl,
             <button
               type="button"
               onClick={handleRemove}
-              className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 hover:bg-red-600 text-white rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-150"
+              className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 hover:bg-red-600 text-white rounded flex items-center justify-center opacity-80 hover:opacity-100 transition-all duration-150"
               title="Eliminar"
             >
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
@@ -182,7 +182,7 @@ export function AssetUploader({ assetKey, assetId, tripId, tripSlug, currentUrl,
           <button
             type="button"
             onClick={handleRemove}
-            className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 hover:bg-red-600 text-white rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-150"
+            className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 hover:bg-red-600 text-white rounded flex items-center justify-center opacity-80 hover:opacity-100 transition-all duration-150"
             title="Eliminar"
           >
             <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
@@ -198,7 +198,7 @@ export function AssetUploader({ assetKey, assetId, tripId, tripSlug, currentUrl,
           <button
             type="button"
             onClick={handleRemove}
-            className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 hover:bg-red-600 text-white rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-150"
+            className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 hover:bg-red-600 text-white rounded flex items-center justify-center opacity-80 hover:opacity-100 transition-all duration-150"
             title="Eliminar"
           >
             <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
@@ -221,6 +221,17 @@ export function AssetUploader({ assetKey, assetId, tripId, tripSlug, currentUrl,
             : `Subir ${type === 'video' ? 'video' : type === 'media' ? 'foto o video' : 'imagen'}`
           }
         </button>
+
+        {url && (
+          <button
+            type="button"
+            disabled={uploading}
+            onClick={handleRemove}
+            className="px-3 py-2 text-sm text-red-500 hover:text-red-700 disabled:opacity-40 transition-colors"
+          >
+            Eliminar
+          </button>
+        )}
 
         {uploading && videoProgress === null && (
           <span className="text-xs text-black/30 animate-pulse">

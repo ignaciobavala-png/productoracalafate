@@ -3,9 +3,21 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 
+const BUCKET = 'site-assets'
+
 function revalidate(tripSlug: string) {
   revalidatePath(`/${tripSlug}`)
   revalidatePath('/admin/content')
+}
+
+// Extrae el path dentro del bucket a partir de la URL pública, para poder
+// borrar el archivo y no dejarlo huérfano ocupando storage.
+function storagePathFromUrl(url?: string | null): string | null {
+  if (!url) return null
+  const marker = `/object/public/${BUCKET}/`
+  const idx = url.indexOf(marker)
+  if (idx === -1) return null
+  return decodeURIComponent(url.slice(idx + marker.length).split('?')[0]) || null
 }
 
 export async function updateProgramDay(tripId: string, dayNumber: number, tripSlug: string, formData: FormData) {
@@ -120,13 +132,9 @@ export async function updateDayPhoto(
   if (error) return { error: `No se pudo guardar la foto: ${error.message}` }
 
   // El archivo anterior queda huérfano en el bucket si no se borra acá.
-  const marker = '/object/public/site-assets/'
-  const idx = previousUrl?.indexOf(marker) ?? -1
-  if (previousUrl && idx !== -1) {
-    const oldPath = decodeURIComponent(previousUrl.slice(idx + marker.length).split('?')[0])
-    if (oldPath && !photoUrl.endsWith(oldPath)) {
-      await supabase.storage.from('site-assets').remove([oldPath])
-    }
+  const oldPath = storagePathFromUrl(previousUrl)
+  if (oldPath && oldPath !== storagePathFromUrl(photoUrl)) {
+    await supabase.storage.from(BUCKET).remove([oldPath])
   }
 
   revalidate(tripSlug)
@@ -135,10 +143,25 @@ export async function updateDayPhoto(
 
 export async function deleteProgramDay(tripId: string, dayNumber: number, tripSlug: string) {
   const supabase = createAdminClient()
+
+  // La foto del día se borra también del bucket: si solo se borran las filas
+  // queda ocupando storage sin que nadie pueda referenciarla nunca más.
+  const { data: day } = await supabase
+    .from('program_items')
+    .select('day_photo_url')
+    .eq('trip_id', tripId)
+    .eq('day_number', dayNumber)
+    .limit(1)
+    .single()
+
   await supabase
     .from('program_items')
     .delete()
     .eq('trip_id', tripId)
     .eq('day_number', dayNumber)
+
+  const photoPath = storagePathFromUrl(day?.day_photo_url)
+  if (photoPath) await supabase.storage.from(BUCKET).remove([photoPath])
+
   revalidate(tripSlug)
 }

@@ -296,10 +296,39 @@ function DayPhotoUploader({
     }
   }
 
+  async function handleRemove() {
+    if (!confirm('¿Eliminar la foto de este día?')) return
+    setError(null)
+    setUploading(true)
+    try {
+      const { error: saveError } = await updateDayPhoto(tripId, dayNumber, '', tripSlug, url)
+      if (saveError) throw new Error(saveError)
+      setUrl('')
+      setSizeInfo(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al eliminar')
+    } finally {
+      setUploading(false)
+    }
+  }
+
   return (
     <div className="space-y-2">
       {url && (
-        <img src={url} alt="" className="h-24 w-full object-cover rounded border border-black/10" />
+        <div className="relative group">
+          <img src={url} alt="" className="h-24 w-full object-cover rounded border border-black/10" />
+          <button
+            type="button"
+            disabled={uploading}
+            onClick={handleRemove}
+            className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 hover:bg-red-600 text-white rounded flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all duration-150 disabled:opacity-40"
+            title="Eliminar foto"
+          >
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <path d="M2 2l6 6M8 2l-6 6" />
+            </svg>
+          </button>
+        </div>
       )}
       <div className="flex items-center gap-3 flex-wrap">
         <input
@@ -317,6 +346,16 @@ function DayPhotoUploader({
         >
           {uploading ? 'Subiendo…' : url ? 'Cambiar foto' : 'Subir foto'}
         </button>
+        {url && (
+          <button
+            type="button"
+            disabled={uploading}
+            onClick={handleRemove}
+            className="px-3 py-1.5 text-xs text-red-500 hover:text-red-700 disabled:opacity-40 transition-colors"
+          >
+            Eliminar foto
+          </button>
+        )}
         {sizeInfo && !uploading && (
           <span className="text-xs text-emerald-600 font-mono">
             {formatBytes(sizeInfo.original)} → {formatBytes(sizeInfo.compressed)}
