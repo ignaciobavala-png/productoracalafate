@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { motion, useScroll, useTransform, useInView } from "framer-motion";
+import { motion, useScroll, useSpring, useTransform, useInView } from "framer-motion";
 import { useOnboardingStore } from "@/store/onboarding-store";
 import { t } from "@/lib/onboarding-text";
 import type { SectionContent } from "@/app/page";
@@ -218,6 +218,7 @@ function DayBlock({
   language: "es" | "en";
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const railRef = useRef<HTMLDivElement>(null);
   const numStr = String(dayNumber).padStart(2, "0");
 
   const { scrollYProgress } = useScroll({
@@ -227,9 +228,17 @@ function DayBlock({
 
   const labelOpacity = useTransform(scrollYProgress, [0, 0.3], [0, 1]);
   const labelX = useTransform(scrollYProgress, [0, 0.3], [-16, 0]);
-  const first = items[0];
-  const dayLabel = language === "es" ? first.day_label_es : first.day_label_en;
-  const daySubtitle = language === "es" ? first.day_subtitle_es : first.day_subtitle_en;
+
+  // La línea de tiempo se dibuja a medida que el día entra en pantalla
+  const { scrollYProgress: railProgress } = useScroll({
+    target: railRef,
+    offset: ["start 75%", "end 65%"],
+  });
+  const railScale = useSpring(railProgress, {
+    stiffness: 90,
+    damping: 24,
+    restDelta: 0.001,
+  });
 
   return (
     <div ref={ref} className="relative">
@@ -261,39 +270,68 @@ function DayBlock({
           </div>
         </motion.div>
 
-        <div className="space-y-4">
-          {items.map((item, i) => {
-            const title = language === "es" ? item.title_es : item.title_en;
-            const desc = language === "es" ? item.description_es : item.description_en;
-            if (!title && !desc) return null;
-            return (
-              <motion.div
-                key={item.id}
-                initial={{ opacity: 0, y: 48, filter: "blur(4px)" }}
-                whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                viewport={{ once: true, margin: "-80px" }}
-                transition={{
-                  duration: 0.7,
-                  ease: [0.25, 0.1, 0.25, 1],
-                  delay: i * 0.18,
-                  filter: { duration: 0.5 },
-                }}
-                className="group border border-hairline bg-surface-soft/50 p-6 md:p-8 hover:border-primary/30 hover:bg-white transition-colors duration-300"
-              >
-                <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-black/20 mb-3 block">
-                  {numStr}.{String(i + 1).padStart(2, "0")}
-                </span>
-                <h4 className="text-lg md:text-xl font-normal tracking-[-0.02em] text-black group-hover:text-primary transition-colors duration-300">
-                  {title}
-                </h4>
-                {desc && (
-                  <p className="mt-3 text-sm md:text-base text-black/60 leading-relaxed font-normal text-justify">
-                    {desc}
-                  </p>
-                )}
-              </motion.div>
-            );
-          })}
+        {/* Línea de tiempo: sin cajas, el recorrido del día se dibuja al scrollear */}
+        <div ref={railRef} className="relative pl-8 md:pl-14">
+          {/* Riel base */}
+          <div
+            aria-hidden="true"
+            className="absolute left-[3px] top-2 bottom-2 w-px bg-hairline"
+          />
+          {/* Riel que se llena con el scroll */}
+          <motion.div
+            aria-hidden="true"
+            className="absolute left-[3px] top-2 bottom-2 w-px bg-primary/60 origin-top"
+            style={{ scaleY: railScale }}
+          />
+
+          <div className="space-y-14 md:space-y-20">
+            {items.map((item, i) => {
+              const title = language === "es" ? item.title_es : item.title_en;
+              const desc = language === "es" ? item.description_es : item.description_en;
+              if (!title && !desc) return null;
+              return (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, y: 28, filter: "blur(4px)" }}
+                  whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                  viewport={{ once: true, margin: "-80px" }}
+                  transition={{
+                    duration: 0.7,
+                    ease: [0.25, 0.1, 0.25, 1],
+                    delay: i * 0.12,
+                    filter: { duration: 0.5 },
+                  }}
+                  className="group relative"
+                >
+                  {/* Marcador sobre el riel */}
+                  <motion.span
+                    aria-hidden="true"
+                    className="absolute -left-8 md:-left-14 top-[0.55rem] block w-[7px] h-[7px] rounded-full bg-primary ring-4 ring-canvas transition-transform duration-300 group-hover:scale-150"
+                    initial={{ scale: 0 }}
+                    whileInView={{ scale: 1 }}
+                    viewport={{ once: true, margin: "-80px" }}
+                    transition={{
+                      duration: 0.5,
+                      ease: [0.25, 0.1, 0.25, 1],
+                      delay: i * 0.12 + 0.15,
+                    }}
+                  />
+
+                  <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-black/25 mb-2 block">
+                    {numStr}.{String(i + 1).padStart(2, "0")}
+                  </span>
+                  <h4 className="text-xl md:text-2xl font-normal tracking-[-0.02em] text-black leading-snug transition-colors duration-300 group-hover:text-primary">
+                    {title}
+                  </h4>
+                  {desc && (
+                    <p className="mt-3 max-w-2xl text-sm md:text-base text-black/60 leading-relaxed font-normal">
+                      {desc}
+                    </p>
+                  )}
+                </motion.div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
