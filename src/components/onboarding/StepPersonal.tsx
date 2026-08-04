@@ -40,6 +40,14 @@ export function StepPersonal() {
         />
 
         <Field
+          label={t("stepPersonal.documentNumberLabel", language)}
+          required
+          value={data.documentNumber ?? ""}
+          onChange={(v) => updateField("documentNumber", v)}
+          placeholder={t("stepPersonal.documentNumberPlaceholder", language)}
+        />
+
+        <Field
           label={t("stepPersonal.emailLabel", language)}
           required
           type="email"
@@ -107,6 +115,14 @@ export function StepPersonal() {
               type="date"
               value={companion.dateOfBirth}
               onChange={(v) => updateCompanionField("dateOfBirth", v)}
+            />
+
+            <Field
+              label={t("stepPersonal.companionDocumentNumberLabel", language)}
+              required
+              value={companion.documentNumber}
+              onChange={(v) => updateCompanionField("documentNumber", v)}
+              placeholder={t("stepPersonal.documentNumberPlaceholder", language)}
             />
 
             <Field

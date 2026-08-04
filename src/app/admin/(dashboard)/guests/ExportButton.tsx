@@ -5,11 +5,13 @@ import { exportGuestsData } from "./actions";
 
 function toCSV(rows: Awaited<ReturnType<typeof exportGuestsData>>): string {
   const headers = [
-    "ID", "Nombre", "Email", "Nacionalidad", "Fecha de nacimiento", "Teléfono",
+    "ID", "Nombre", "Email", "Nacionalidad", "Fecha de nacimiento", "N° documento",
+    "Foto documento", "Teléfono",
     "WhatsApp", "Viene solo", "Dieta", "Detalle dieta", "Bio",
     "Factura", "Método de pago", "Estado", "Fecha registro", "Código invitación",
     "Acompañante — Nombre", "Acompañante — Email", "Acompañante — Nacionalidad",
-    "Acompañante — Fecha nac.", "Acompañante — Teléfono", "Acompañante — Dieta",
+    "Acompañante — Fecha nac.", "Acompañante — N° documento",
+    "Acompañante — Teléfono", "Acompañante — Dieta",
   ];
 
   const escape = (v: unknown): string => {
@@ -24,6 +26,7 @@ function toCSV(rows: Awaited<ReturnType<typeof exportGuestsData>>): string {
     const c = Array.isArray(g.companions) ? g.companions[0] : null;
     return [
       g.id, g.full_name, g.email, g.nationality ?? "", g.date_of_birth ?? "",
+      g.document_number ?? "", g.id_photo_url ? "Sí" : "No",
       g.phone ?? "", g.wants_whatsapp ? "Sí" : "No",
       g.is_coming_alone ? "Sí" : "No",
       g.dietary_restrictions ?? [], g.dietary_details ?? "", g.bio ?? "",
@@ -31,7 +34,7 @@ function toCSV(rows: Awaited<ReturnType<typeof exportGuestsData>>): string {
       g.status, new Date(g.submitted_at).toLocaleDateString("es-CL"),
       g.invitation_code ?? "",
       c?.full_name ?? "", c?.email ?? "", c?.nationality ?? "",
-      c?.date_of_birth ?? "", c?.phone ?? "",
+      c?.date_of_birth ?? "", c?.document_number ?? "", c?.phone ?? "",
       c?.dietary_restrictions ?? [],
     ].map(escape).join(",");
   });

@@ -19,11 +19,11 @@ export async function exportGuestsData() {
   const { data, error } = await supabase
     .from('guests')
     .select(`
-      id, full_name, email, nationality, date_of_birth, phone,
+      id, full_name, email, nationality, date_of_birth, document_number, phone,
       wants_whatsapp, is_coming_alone, dietary_restrictions, dietary_details,
       bio, needs_invoice, payment_method_id, accepted_terms, status,
-      submitted_at, invitation_code,
-      companions (full_name, email, nationality, date_of_birth, phone, dietary_restrictions)
+      submitted_at, invitation_code, id_photo_url,
+      companions (full_name, email, nationality, date_of_birth, document_number, phone, dietary_restrictions)
     `)
     .order('submitted_at', { ascending: false })
 

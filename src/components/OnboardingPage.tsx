@@ -219,12 +219,14 @@ export function OnboardingPage({ tripSlug, initialCode, paymentContent, footerCo
     data.fullName?.trim() &&
     data.nationality?.trim() &&
     data.dateOfBirth?.trim() &&
+    data.documentNumber?.trim() &&
     data.email?.trim() &&
     data.isComingAlone !== null &&
     (data.isComingAlone !== false || (
       data.companion?.fullName?.trim() &&
       data.companion?.nationality?.trim() &&
       data.companion?.dateOfBirth?.trim() &&
+      data.companion?.documentNumber?.trim() &&
       data.companion?.email?.trim()
     ))
   );
@@ -251,8 +253,8 @@ export function OnboardingPage({ tripSlug, initialCode, paymentContent, footerCo
 
   const STEP_HINTS: Record<number, string> = {
     1: language === "es"
-      ? "Completa nombre, nacionalidad, fecha de nacimiento y email para continuar."
-      : "Fill in name, nationality, date of birth and email to continue.",
+      ? "Completa nombre, nacionalidad, fecha de nacimiento, número de documento y email para continuar."
+      : "Fill in name, nationality, date of birth, document number and email to continue.",
     2: language === "es"
       ? "Sube tu foto de documento, foto de perfil, y completa tu bio."
       : "Upload your ID photo, profile photo, and complete your bio.",

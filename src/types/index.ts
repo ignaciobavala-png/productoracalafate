@@ -29,6 +29,7 @@ export interface CompanionData {
   fullName: string;
   nationality: string;
   dateOfBirth: string;
+  documentNumber: string;
   email: string;
   phone: string;
   wantsWhatsApp: boolean;
@@ -42,6 +43,7 @@ export interface GuestOnboardingData {
   fullName: string;
   nationality: string;
   dateOfBirth: string;
+  documentNumber: string;
   email: string;
   phone: string;
   wantsWhatsApp: boolean;

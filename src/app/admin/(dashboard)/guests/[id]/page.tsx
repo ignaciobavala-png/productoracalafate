@@ -29,32 +29,17 @@ export default async function GuestDetailPage({ params }: Props) {
   if (!guest) notFound()
 
   // Signed URLs para fotos privadas (1 hora)
-  let idPhotoUrl: string | null = null
-  let profilePhotoUrl: string | null = null
-  let paymentProofUrl: string | null = null
-
-  const signedUrlFetches: Promise<void>[] = []
-
-  if (guest.id_photo_url) {
-    signedUrlFetches.push(
-      supabase.storage.from('guest-id-photos').createSignedUrl(guest.id_photo_url, 3600)
-        .then(({ data }) => { idPhotoUrl = data?.signedUrl ?? null })
-    )
-  }
-  if (guest.profile_photo_url) {
-    signedUrlFetches.push(
-      supabase.storage.from('guest-profile-photos').createSignedUrl(guest.profile_photo_url, 3600)
-        .then(({ data }) => { profilePhotoUrl = data?.signedUrl ?? null })
-    )
-  }
-  if (guest.payment_proof_url) {
-    signedUrlFetches.push(
-      supabase.storage.from('guest-payment-proofs').createSignedUrl(guest.payment_proof_url, 3600)
-        .then(({ data }) => { paymentProofUrl = data?.signedUrl ?? null })
-    )
+  const signed = async (bucket: string, path: string | null) => {
+    if (!path) return null
+    const { data } = await supabase.storage.from(bucket).createSignedUrl(path, 3600)
+    return data?.signedUrl ?? null
   }
 
-  await Promise.all(signedUrlFetches)
+  const [idPhotoUrl, profilePhotoUrl, paymentProofUrl] = await Promise.all([
+    signed('guest-id-photos', guest.id_photo_url),
+    signed('guest-profile-photos', guest.profile_photo_url),
+    signed('guest-payment-proofs', guest.payment_proof_url),
+  ])
 
   const confirmAction = updateGuestStatus.bind(null, id, 'confirmed')
   const pendingAction = updateGuestStatus.bind(null, id, 'pending')
@@ -112,6 +97,7 @@ export default async function GuestDetailPage({ params }: Props) {
           <Row label="Teléfono"      value={guest.phone} />
           <Row label="Nacionalidad"  value={guest.nationality} />
           <Row label="Fecha de nac." value={guest.date_of_birth} />
+          <Row label="N° documento"  value={guest.document_number} />
           <Row label="WhatsApp"      value={guest.wants_whatsapp ? 'Sí' : 'No'} />
           <Row label="Viene solo"    value={guest.is_coming_alone ? 'Sí' : 'No'} />
           <Row label="Código inv."   value={guest.invitation_code} />
@@ -139,35 +125,27 @@ export default async function GuestDetailPage({ params }: Props) {
           )}
         </Section>
 
-        {/* Fotos e identidad */}
-        {(idPhotoUrl || profilePhotoUrl) && (
-          <Section title="Fotos">
-            <div className="grid grid-cols-2 gap-4 p-4">
-              {idPhotoUrl && (
-                <div>
-                  <p className="text-xs text-black/40 mb-2">Documento de identidad</p>
-                  <a href={idPhotoUrl} target="_blank" rel="noopener noreferrer">
-                    <img src={idPhotoUrl} alt="ID" className="w-full rounded border border-black/10 hover:opacity-80 transition-opacity" />
-                  </a>
-                </div>
-              )}
-              {profilePhotoUrl && (
-                <div>
-                  <p className="text-xs text-black/40 mb-2">Foto de perfil</p>
-                  <a href={profilePhotoUrl} target="_blank" rel="noopener noreferrer">
-                    <img src={profilePhotoUrl} alt="Perfil" className="w-full rounded border border-black/10 hover:opacity-80 transition-opacity" />
-                  </a>
-                </div>
-              )}
-            </div>
-          </Section>
-        )}
+        {/* Fotos e identidad — siempre visible, así se ve qué falta */}
+        <Section title="Fotos">
+          <div className="grid grid-cols-2 gap-4 p-4">
+            <PhotoSlot
+              label="Documento de identidad"
+              url={idPhotoUrl}
+              stored={guest.id_photo_url}
+            />
+            <PhotoSlot
+              label="Foto de perfil"
+              url={profilePhotoUrl}
+              stored={guest.profile_photo_url}
+            />
+          </div>
+        </Section>
 
         {/* Comprobante de pago */}
         {paymentProofUrl && (
           <Section title="Comprobante de pago">
             <div className="p-4">
-              {(paymentProofUrl as string).includes('.pdf') ? (
+              {paymentProofUrl.includes('.pdf') ? (
                 <a
                   href={paymentProofUrl}
                   target="_blank"
@@ -193,6 +171,7 @@ export default async function GuestDetailPage({ params }: Props) {
             <Row label="Teléfono"     value={c.phone} />
             <Row label="Nacionalidad" value={c.nationality} />
             <Row label="Fecha nac."   value={c.date_of_birth} />
+            <Row label="N° documento" value={c.document_number} />
             <Row label="WhatsApp"     value={c.wants_whatsapp ? 'Sí' : 'No'} />
           </Section>
         ))}
@@ -208,6 +187,36 @@ function Section({ title, children }: { title: string; children: React.ReactNode
         <h2 className="text-xs font-medium text-black/40 uppercase tracking-wider">{title}</h2>
       </div>
       <div className="divide-y divide-black/5">{children}</div>
+    </div>
+  )
+}
+
+function PhotoSlot({
+  label,
+  url,
+  stored,
+}: {
+  label: string
+  url: string | null
+  stored: string | null
+}) {
+  return (
+    <div>
+      <p className="text-xs text-black/40 mb-2">{label}</p>
+      {url ? (
+        <a href={url} target="_blank" rel="noopener noreferrer">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={url} alt={label} className="w-full rounded border border-black/10 hover:opacity-80 transition-opacity" />
+        </a>
+      ) : (
+        <div className="flex items-center justify-center h-32 rounded border border-dashed border-black/15 bg-black/[0.02] px-3 text-center">
+          <p className="text-xs text-black/30 leading-relaxed">
+            {stored
+              ? 'El archivo está registrado pero no se pudo abrir. Revisar el bucket en Supabase.'
+              : 'Sin subir todavía'}
+          </p>
+        </div>
+      )}
     </div>
   )
 }

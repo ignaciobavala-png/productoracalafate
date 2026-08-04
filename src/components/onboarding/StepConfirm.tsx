@@ -36,6 +36,7 @@ export function StepConfirm() {
           <Row label={t("stepPersonal.fullNameLabel", language)} value={data.fullName} />
           <Row label={t("stepPersonal.nationalityLabel", language)} value={data.nationality} />
           <Row label={t("stepPersonal.dateOfBirthLabel", language)} value={data.dateOfBirth} />
+          <Row label={t("stepPersonal.documentNumberLabel", language)} value={data.documentNumber} />
           <Row label={t("stepPersonal.emailLabel", language)} value={data.email} />
           <Row label={t("stepPersonal.phoneLabel", language)} value={data.phone} />
           <Row label={t("stepPersonal.whatsappLabel", language)} value={data.wantsWhatsApp ? t("shared.yes", language) : t("shared.no", language)} />
@@ -51,6 +52,7 @@ export function StepConfirm() {
             <Row label={t("stepPersonal.companionFullNameLabel", language)} value={companion.fullName} />
             <Row label={t("stepPersonal.companionNationalityLabel", language)} value={companion.nationality} />
             <Row label={t("stepPersonal.companionDateOfBirthLabel", language)} value={companion.dateOfBirth} />
+            <Row label={t("stepPersonal.companionDocumentNumberLabel", language)} value={companion.documentNumber} />
             <Row label={t("stepPersonal.companionEmailLabel", language)} value={companion.email} />
             <Row label={t("stepPersonal.companionPhoneLabel", language)} value={companion.phone} />
             <Row label={t("stepPersonal.companionWhatsappLabel", language)} value={companion.wantsWhatsApp ? t("shared.yes", language) : t("shared.no", language)} />

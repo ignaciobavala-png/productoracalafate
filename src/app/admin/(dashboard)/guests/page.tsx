@@ -18,7 +18,7 @@ export default async function GuestsPage() {
 
   const { data: guests } = await supabase
     .from('guests')
-    .select('id, full_name, email, nationality, status, submitted_at, payment_method_id, is_coming_alone, payment_proof_url')
+    .select('id, full_name, email, nationality, document_number, status, submitted_at, payment_method_id, is_coming_alone, payment_proof_url, id_photo_url')
     .order('submitted_at', { ascending: false })
 
   const counts = {
@@ -55,6 +55,8 @@ export default async function GuestsPage() {
                 <th className="text-left px-4 py-3 text-black/40 font-normal">Nombre</th>
                 <th className="text-left px-4 py-3 text-black/40 font-normal">Email</th>
                 <th className="text-left px-4 py-3 text-black/40 font-normal">Nacionalidad</th>
+                <th className="text-left px-4 py-3 text-black/40 font-normal">N° doc.</th>
+                <th className="text-left px-4 py-3 text-black/40 font-normal">Foto doc.</th>
                 <th className="text-left px-4 py-3 text-black/40 font-normal">Pago</th>
                 <th className="text-left px-4 py-3 text-black/40 font-normal">Acompañante</th>
                 <th className="text-left px-4 py-3 text-black/40 font-normal">Fecha</th>
@@ -75,6 +77,22 @@ export default async function GuestsPage() {
                   </td>
                   <td className="px-4 py-3 text-black/50">{guest.email}</td>
                   <td className="px-4 py-3 text-black/50">{guest.nationality ?? '—'}</td>
+                  <td className="px-4 py-3 text-black/50 font-mono text-xs">{guest.document_number ?? '—'}</td>
+                  <td className="px-4 py-3">
+                    {guest.id_photo_url ? (
+                      <a
+                        href={`/admin/guests/${guest.id}`}
+                        className="inline-flex items-center gap-1 text-xs text-green-700 hover:text-green-900 transition-colors"
+                      >
+                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <path d="M1.5 5l2.5 2.5 4.5-4.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        Ver
+                      </a>
+                    ) : (
+                      <span className="text-xs text-black/20">—</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-black/50 font-mono text-xs">{guest.payment_method_id ?? '—'}</td>
                   <td className="px-4 py-3 text-black/50">{guest.is_coming_alone ? 'No' : 'Sí'}</td>
                   <td className="px-4 py-3 text-black/40 text-xs">
