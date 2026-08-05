@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useId } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { compressImage, formatBytes } from '@/lib/compress-image'
 import { compressVideo } from '@/lib/compress-video'
@@ -33,7 +33,8 @@ export function AssetUploader({ assetKey, assetId, tripId, tripSlug, currentUrl,
   const [error, setError] = useState<string | null>(null)
   const [sizeInfo, setSizeInfo] = useState<SizeInfo | null>(null)
   const [videoProgress, setVideoProgress] = useState<number | null>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const [pickedName, setPickedName] = useState<string | null>(null)
+  const inputId = useId()
 
   const accept = type === 'video'
     ? VIDEO_ACCEPT
@@ -42,10 +43,12 @@ export function AssetUploader({ assetKey, assetId, tripId, tripSlug, currentUrl,
       : IMAGE_ACCEPT
 
   async function handleFile(file: File) {
+    if (uploading) return
     setUploading(true)
     setError(null)
     setSizeInfo(null)
     setVideoProgress(null)
+    setPickedName(file.name)
 
     try {
       const supabase = createClient()
@@ -91,9 +94,11 @@ export function AssetUploader({ assetKey, assetId, tripId, tripSlug, currentUrl,
 
       setUrl(publicUrl)
     } catch (err) {
+      console.error('[AssetUploader]', assetKey, err)
       setError(err instanceof Error ? err.message : 'Error al subir')
     } finally {
       setUploading(false)
+      setPickedName(null)
     }
   }
 
@@ -109,12 +114,17 @@ export function AssetUploader({ assetKey, assetId, tripId, tripSlug, currentUrl,
     setSizeInfo(null)
   }
 
+  // El input NO puede ser display:none (`hidden`) ni abrirse con un .click() por
+  // JS: Safari iOS y los navegadores embebidos (WhatsApp, Instagram, Gmail)
+  // ignoran ese click y el botón parece no hacer nada. Tiene que estar en el
+  // layout — aunque sea invisible — y activarse con un <label> nativo.
   const fileInput = (
     <input
-      ref={inputRef}
+      id={inputId}
       type="file"
       accept={accept}
-      className="hidden"
+      disabled={uploading}
+      className="absolute w-px h-px opacity-0 overflow-hidden -z-10"
       onChange={(e) => {
         const f = e.target.files?.[0]
         if (f) handleFile(f)
@@ -125,7 +135,7 @@ export function AssetUploader({ assetKey, assetId, tripId, tripSlug, currentUrl,
 
   if (compact) {
     return (
-      <div className="space-y-1.5">
+      <div className="relative space-y-1.5">
         <div className="relative group">
           {url ? (
             <img src={url} alt={label} className="w-full aspect-video object-cover rounded border border-black/10" />
@@ -148,21 +158,28 @@ export function AssetUploader({ assetKey, assetId, tripId, tripSlug, currentUrl,
           )}
         </div>
         {fileInput}
-        <button
-          type="button"
-          disabled={uploading}
-          onClick={() => inputRef.current?.click()}
-          className="w-full py-1.5 bg-black/8 text-black/60 text-xs rounded hover:bg-black/15 hover:text-black disabled:opacity-40 transition-colors"
+        <label
+          htmlFor={inputId}
+          className={`block w-full py-1.5 text-center bg-black/8 text-black/60 text-xs rounded transition-colors ${
+            uploading ? 'opacity-40 pointer-events-none' : 'cursor-pointer hover:bg-black/15 hover:text-black'
+          }`}
         >
           {uploading ? 'Subiendo…' : url ? 'Cambiar' : 'Subir foto'}
-        </button>
+        </label>
         <p className="text-[10px] text-black/30 truncate font-mono">{label}</p>
+        {pickedName && uploading && (
+          <p className="text-[10px] text-black/40 truncate">Procesando {pickedName}…</p>
+        )}
         {sizeInfo && !uploading && (
           <p className="text-[10px] text-emerald-600 font-mono">
             {formatBytes(sizeInfo.original)} → {formatBytes(sizeInfo.compressed)}
           </p>
         )}
-        {error && <p className="text-[10px] text-red-400">{error}</p>}
+        {error && (
+          <p className="text-[11px] text-red-600 bg-red-50 border border-red-200 rounded px-2 py-1.5 leading-snug">
+            {error}
+          </p>
+        )}
       </div>
     )
   }
@@ -208,19 +225,19 @@ export function AssetUploader({ assetKey, assetId, tripId, tripSlug, currentUrl,
         </div>
       )}
 
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className="relative flex items-center gap-3 flex-wrap">
         {fileInput}
-        <button
-          type="button"
-          disabled={uploading}
-          onClick={() => inputRef.current?.click()}
-          className="px-4 py-2 bg-black text-white text-sm font-medium rounded hover:bg-black/80 disabled:opacity-40 transition-colors"
+        <label
+          htmlFor={inputId}
+          className={`inline-block px-4 py-2 bg-black text-white text-sm font-medium rounded transition-colors ${
+            uploading ? 'opacity-40 pointer-events-none' : 'cursor-pointer hover:bg-black/80'
+          }`}
         >
           {uploading
             ? (videoProgress !== null ? 'Comprimiendo…' : 'Subiendo…')
             : `Subir ${type === 'video' ? 'video' : type === 'media' ? 'foto o video' : 'imagen'}`
           }
-        </button>
+        </label>
 
         {url && (
           <button
@@ -235,7 +252,7 @@ export function AssetUploader({ assetKey, assetId, tripId, tripSlug, currentUrl,
 
         {uploading && videoProgress === null && (
           <span className="text-xs text-black/30 animate-pulse">
-            {type === 'image' ? 'Comprimiendo y subiendo…' : 'Subiendo…'}
+            {pickedName ? `Procesando ${pickedName}…` : type === 'image' ? 'Comprimiendo y subiendo…' : 'Subiendo…'}
           </span>
         )}
 
@@ -270,7 +287,11 @@ export function AssetUploader({ assetKey, assetId, tripId, tripSlug, currentUrl,
         </p>
       )}
 
-      {error && <p className="text-xs text-red-400">{error}</p>}
+      {error && (
+        <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2 leading-snug">
+          {error}
+        </p>
+      )}
     </div>
   )
 }

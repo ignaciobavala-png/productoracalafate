@@ -1,6 +1,6 @@
 'use client'
 
-import { useTransition, useRef, useState } from 'react'
+import { useTransition, useId, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { compressImage, formatBytes } from '@/lib/compress-image'
 import {
@@ -266,12 +266,15 @@ function DayPhotoUploader({
   const [uploading, setUploading] = useState(false)
   const [sizeInfo, setSizeInfo] = useState<{ original: number; compressed: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const [pickedName, setPickedName] = useState<string | null>(null)
+  const inputId = useId()
 
   async function handleFile(file: File) {
+    if (uploading) return
     setUploading(true)
     setError(null)
     setSizeInfo(null)
+    setPickedName(file.name)
     try {
       const compressed = await compressImage(file)
       setSizeInfo({ original: file.size, compressed: compressed.size })
@@ -290,9 +293,11 @@ function DayPhotoUploader({
       if (saveError) throw new Error(saveError)
       setUrl(publicUrl)
     } catch (err) {
+      console.error('[DayPhotoUploader]', dayNumber, err)
       setError(err instanceof Error ? err.message : 'Error al subir')
     } finally {
       setUploading(false)
+      setPickedName(null)
     }
   }
 
@@ -330,22 +335,30 @@ function DayPhotoUploader({
           </button>
         </div>
       )}
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className="relative flex items-center gap-3 flex-wrap">
+        {/* Ni display:none ni .click() por JS: Safari iOS y los navegadores
+            embebidos (WhatsApp, Instagram) ignoran ese click y el botón parece
+            no hacer nada. El input queda invisible pero en el layout, activado
+            por un <label> nativo. */}
         <input
-          ref={inputRef}
+          id={inputId}
           type="file"
           accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
-          className="hidden"
+          disabled={uploading}
+          className="absolute w-px h-px opacity-0 overflow-hidden -z-10"
           onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = '' }}
         />
-        <button
-          type="button"
-          disabled={uploading}
-          onClick={() => inputRef.current?.click()}
-          className="px-3 py-1.5 bg-black text-white text-xs font-medium rounded hover:bg-black/80 disabled:opacity-40 transition-colors"
+        <label
+          htmlFor={inputId}
+          className={`inline-block px-3 py-1.5 bg-black text-white text-xs font-medium rounded transition-colors ${
+            uploading ? 'opacity-40 pointer-events-none' : 'cursor-pointer hover:bg-black/80'
+          }`}
         >
           {uploading ? 'Subiendo…' : url ? 'Cambiar foto' : 'Subir foto'}
-        </button>
+        </label>
+        {uploading && pickedName && (
+          <span className="text-xs text-black/30 animate-pulse">Procesando {pickedName}…</span>
+        )}
         {url && (
           <button
             type="button"
@@ -362,7 +375,11 @@ function DayPhotoUploader({
           </span>
         )}
       </div>
-      {error && <p className="text-xs text-red-400">{error}</p>}
+      {error && (
+        <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2 leading-snug">
+          {error}
+        </p>
+      )}
     </div>
   )
 }
