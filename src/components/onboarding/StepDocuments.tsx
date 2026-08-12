@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { useOnboardingStore } from "@/store/onboarding-store";
 import { t } from "@/lib/onboarding-text";
+import { compressImage } from "@/lib/compress-image";
 
 const DIETARY_OPTIONS = [
   "dietaryVegan",
@@ -204,20 +205,42 @@ function FileDropzone({
   language: "es" | "en";
 }) {
   const [dragging, setDragging] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // La imagen se convierte a webp acá, al elegirla, y no al enviar el
+  // formulario: si el navegador no puede decodificarla (.HEIC de iPhone) el
+  // invitado se entera ahora y no después de completar todos los pasos.
+  const accept = useCallback(
+    async (f: File) => {
+      setError(null);
+      setBusy(true);
+      try {
+        onChange(await compressImage(f));
+      } catch {
+        onChange(null);
+        setError(t("stepDocuments.dropzoneErrorHeic", language));
+      } finally {
+        setBusy(false);
+      }
+    },
+    [onChange, language]
+  );
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
       setDragging(false);
       const f = e.dataTransfer.files[0];
-      if (f) onChange(f);
+      if (f) accept(f);
     },
-    [onChange]
+    [accept]
   );
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
-    if (f) onChange(f);
+    if (f) accept(f);
+    e.target.value = "";
   };
 
   return (
@@ -227,7 +250,7 @@ function FileDropzone({
           <span className="text-sm text-black truncate mr-4">{file.name}</span>
           <button
             type="button"
-            onClick={() => onChange(null)}
+            onClick={() => { setError(null); onChange(null); }}
             className="text-[11px] text-black hover:text-primary transition-colors duration-300 cursor-pointer underline"
           >
             {t("stepDocuments.dropzoneRemove", language)}
@@ -248,14 +271,20 @@ function FileDropzone({
             type="file"
             accept="image/jpeg,image/png,image/webp"
             onChange={handleChange}
+            disabled={busy}
             className="hidden"
           />
           <span className="text-xs text-black">
-            {dragging
-              ? t("stepDocuments.dropzoneDragging", language)
-              : t("stepDocuments.dropzoneIdle", language)}
+            {busy
+              ? t("stepDocuments.dropzoneProcessing", language)
+              : dragging
+                ? t("stepDocuments.dropzoneDragging", language)
+                : t("stepDocuments.dropzoneIdle", language)}
           </span>
         </label>
+      )}
+      {error && (
+        <p className="mt-2 text-xs text-primary leading-snug">{error}</p>
       )}
     </div>
   );

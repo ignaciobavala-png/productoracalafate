@@ -177,6 +177,13 @@ export const onboardingText = {
     dropzoneDragging: { es: "Soltable acá", en: "Drop it here" },
     dropzoneSelected: { es: "Archivo seleccionado:", en: "File selected:" },
     dropzoneRemove: { es: "Quitar", en: "Remove" },
+    dropzoneProcessing: { es: "Procesando la imagen…", en: "Processing image…" },
+    // El error se muestra al elegir el archivo, no al enviar el formulario:
+    // el .HEIC del iPhone no lo puede decodificar ni Chrome ni Firefox.
+    dropzoneErrorHeic: {
+      es: "No pudimos abrir esa imagen. Si es una foto de iPhone (.HEIC), guardala o exportala como JPG y volvé a subirla.",
+      en: "We couldn't open that image. If it's an iPhone photo (.HEIC), save or export it as JPG and upload it again.",
+    },
     companionSection: { es: "Documentos del acompañante", en: "Companion documents" },
     companionDietaryTitle: { es: "¿El acompañante tiene alguna dieta, alergia o restricción alimentaria?", en: "Does the companion have any diet, allergy, or dietary restriction?" },
     companionProfilePhotoLabel: { es: "Foto del acompañante (tamaño carnet)", en: "Companion photo (passport size)" },

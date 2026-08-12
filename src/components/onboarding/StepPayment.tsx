@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { useOnboardingStore } from "@/store/onboarding-store";
 import { t } from "@/lib/onboarding-text";
 import { buildPaymentMethods, CARD_PAYMENT_METHODS } from "@/lib/mock-data";
+import { compressImage } from "@/lib/compress-image";
 import { TermsModal } from "./TermsModal";
 
 function CopyButton({ value }: { value: string }) {
@@ -239,20 +240,45 @@ function ProofDropzone({
   language: "es" | "en";
 }) {
   const [dragging, setDragging] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Los PDF van tal cual; las imágenes se convierten a webp acá, al elegirlas,
+  // para que un .HEIC de iPhone falle a la vista y no recién en el submit.
+  const accept = useCallback(
+    async (f: File) => {
+      setError(null);
+      if (f.type === "application/pdf" || /\.pdf$/i.test(f.name)) {
+        onChange(f);
+        return;
+      }
+      setBusy(true);
+      try {
+        onChange(await compressImage(f));
+      } catch {
+        onChange(null);
+        setError(t("stepDocuments.dropzoneErrorHeic", language));
+      } finally {
+        setBusy(false);
+      }
+    },
+    [onChange, language]
+  );
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
       setDragging(false);
       const f = e.dataTransfer.files[0];
-      if (f) onChange(f);
+      if (f) accept(f);
     },
-    [onChange]
+    [accept]
   );
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
-    if (f) onChange(f);
+    if (f) accept(f);
+    e.target.value = "";
   };
 
   if (file) {
@@ -264,7 +290,7 @@ function ProofDropzone({
         <span className="text-sm text-black truncate flex-1">{file.name}</span>
         <button
           type="button"
-          onClick={() => onChange(null)}
+          onClick={() => { setError(null); onChange(null); }}
           className="shrink-0 text-[11px] text-black/40 hover:text-primary transition-colors duration-300 cursor-pointer underline underline-offset-2"
         >
           {language === "es" ? "Quitar" : "Remove"}
@@ -274,6 +300,7 @@ function ProofDropzone({
   }
 
   return (
+    <>
     <label
       onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
       onDragLeave={() => setDragging(false)}
@@ -288,6 +315,7 @@ function ProofDropzone({
         type="file"
         accept="image/jpeg,image/png,image/webp,application/pdf"
         onChange={handleChange}
+        disabled={busy}
         className="hidden"
       />
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.2" className="text-black/25">
@@ -295,12 +323,16 @@ function ProofDropzone({
         <path d="M3 14v1a2 2 0 002 2h10a2 2 0 002-2v-1" strokeLinecap="round" />
       </svg>
       <span className="text-xs text-black/50 text-center px-4">
-        {dragging
-          ? (language === "es" ? "Suelta aquí" : "Drop here")
-          : (language === "es"
-              ? "Arrastra o haz clic para subir — JPG, PNG, PDF"
-              : "Drag or click to upload — JPG, PNG, PDF")}
+        {busy
+          ? t("stepDocuments.dropzoneProcessing", language)
+          : dragging
+            ? (language === "es" ? "Suelta aquí" : "Drop here")
+            : (language === "es"
+                ? "Arrastra o haz clic para subir — JPG, PNG, PDF"
+                : "Drag or click to upload — JPG, PNG, PDF")}
       </span>
     </label>
+    {error && <p className="mt-2 text-xs text-primary leading-snug">{error}</p>}
+    </>
   );
 }

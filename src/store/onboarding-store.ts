@@ -10,13 +10,15 @@ import { updateGuestUrl } from "@/app/actions/update-guest-urls";
 import { updateCompanionUrl } from "@/app/actions/update-companion-url";
 import { rollbackGuestSubmission } from "@/app/actions/rollback-guest";
 
+// Los dropzones ya entregan webp: esto es la red de seguridad por si alguna
+// imagen llega sin comprimir. No lleva catch a propósito — con el `catch
+// { return file }` anterior se subía el original (un .HEIC de iPhone, que el
+// bucket rechaza por allowed_mime_types) y el invitado se enteraba recién al
+// final, con el alta revertida y sin saber qué archivo era el problema.
 async function toUploadable(file: File): Promise<File> {
-  if (!file.type.startsWith("image/")) return file;
-  try {
-    return await compressImage(file);
-  } catch {
-    return file;
-  }
+  if (file.type === "application/pdf" || /\.pdf$/i.test(file.name)) return file;
+  if (file.type === "image/webp") return file;
+  return compressImage(file);
 }
 
 type ContentMap = Record<string, { es: string; en: string }>

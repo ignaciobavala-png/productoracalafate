@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-08-12 — El onboarding ahora garantiza webp, como el admin
+
+Revisión a raíz de la pregunta "¿el compresor garantiza que todo esté en webp?".
+En el storage hoy son 11 objetos, todos `.webp`, pero la garantía sólo existía
+del lado del admin: `AssetUploader` y el uploader de fotos del programa pasan
+todo por `compressImage` y, si falla, no suben nada.
+
+El onboarding de invitados tenía dos escapes en `toUploadable()`
+(`src/store/onboarding-store.ts`):
+
+```ts
+if (!file.type.startsWith("image/")) return file;              // ① .HEIC llega con type vacío
+try { return await compressImage(file) } catch { return file } // ② si falla, sube el original
+```
+
+No terminaba en un JPG pesado en el bucket porque `allowed_mime_types` lo
+rechaza, pero el error saltaba **al final del submit**: se revertía el alta
+entera (`rollbackGuestSubmission`) y el invitado no sabía cuál de las tres fotos
+era el problema.
+
+- Los dropzones (`StepDocuments`, `StepPayment`) convierten a webp **al elegir
+  el archivo**, muestran "Procesando la imagen…" mientras tanto y, si el
+  navegador no puede decodificarlo, muestran ahí mismo el mensaje bilingüe:
+  *"si es una foto de iPhone (.HEIC), exportala como JPG"*. El archivo no queda
+  cargado, así que el invitado no avanza con una foto rota.
+- Los PDF de comprobante siguen yendo tal cual (por `type` o por extensión).
+- `toUploadable()` queda como red de seguridad **sin catch**: si algo llega sin
+  comprimir, se comprime; si no se puede, falla en vez de subir el original.
+
 ## 2026-08-12 — "Puse que incluye los vuelos y la página no cambió" + numeración del itinerario
 
 Reporte de la clienta: *"no incluye vuelos domésticos de ida y vuelta — yo puse
