@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useId } from 'react'
+import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { compressImage, formatBytes } from '@/lib/compress-image'
 import { compressVideo } from '@/lib/compress-video'
@@ -34,7 +34,6 @@ export function AssetUploader({ assetKey, assetId, tripId, tripSlug, currentUrl,
   const [sizeInfo, setSizeInfo] = useState<SizeInfo | null>(null)
   const [videoProgress, setVideoProgress] = useState<number | null>(null)
   const [pickedName, setPickedName] = useState<string | null>(null)
-  const inputId = useId()
 
   const accept = type === 'video'
     ? VIDEO_ACCEPT
@@ -114,13 +113,15 @@ export function AssetUploader({ assetKey, assetId, tripId, tripSlug, currentUrl,
     setSizeInfo(null)
   }
 
-  // El input NO puede ser display:none (`hidden`) ni abrirse con un .click() por
-  // JS: Safari iOS y los navegadores embebidos (WhatsApp, Instagram, Gmail)
-  // ignoran ese click y el botón parece no hacer nada. Tiene que estar en el
-  // layout — aunque sea invisible — y activarse con un <label> nativo.
+  // Reglas para que el selector de archivos abra en el teléfono del cliente:
+  // 1. Nada de `inputRef.current.click()`: Safari iOS y los navegadores
+  //    embebidos (WhatsApp, Instagram, Gmail) ignoran ese click sin error.
+  // 2. El input va DENTRO del <label> (asociación implícita), no atado por
+  //    id + htmlFor. Es el patrón que ya funcionaba en los dropzones del
+  //    onboarding; el htmlFor depende de que el browser matchee el id.
+  // 3. Invisible pero presente en el layout (no `display:none`).
   const fileInput = (
     <input
-      id={inputId}
       type="file"
       accept={accept}
       disabled={uploading}
@@ -157,13 +158,12 @@ export function AssetUploader({ assetKey, assetId, tripId, tripSlug, currentUrl,
             </button>
           )}
         </div>
-        {fileInput}
         <label
-          htmlFor={inputId}
-          className={`block w-full py-1.5 text-center bg-black/8 text-black/60 text-xs rounded transition-colors ${
+          className={`relative block w-full py-1.5 text-center bg-black/8 text-black/60 text-xs rounded transition-colors ${
             uploading ? 'opacity-40 pointer-events-none' : 'cursor-pointer hover:bg-black/15 hover:text-black'
           }`}
         >
+          {fileInput}
           {uploading ? 'Subiendo…' : url ? 'Cambiar' : 'Subir foto'}
         </label>
         <p className="text-[10px] text-black/30 truncate font-mono">{label}</p>
@@ -226,13 +226,12 @@ export function AssetUploader({ assetKey, assetId, tripId, tripSlug, currentUrl,
       )}
 
       <div className="relative flex items-center gap-3 flex-wrap">
-        {fileInput}
         <label
-          htmlFor={inputId}
-          className={`inline-block px-4 py-2 bg-black text-white text-sm font-medium rounded transition-colors ${
+          className={`relative inline-block px-4 py-2 bg-black text-white text-sm font-medium rounded transition-colors ${
             uploading ? 'opacity-40 pointer-events-none' : 'cursor-pointer hover:bg-black/80'
           }`}
         >
+          {fileInput}
           {uploading
             ? (videoProgress !== null ? 'Comprimiendo…' : 'Subiendo…')
             : `Subir ${type === 'video' ? 'video' : type === 'media' ? 'foto o video' : 'imagen'}`

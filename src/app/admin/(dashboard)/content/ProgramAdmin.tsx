@@ -1,6 +1,6 @@
 'use client'
 
-import { useTransition, useId, useState } from 'react'
+import { useTransition, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { compressImage, formatBytes } from '@/lib/compress-image'
 import {
@@ -267,7 +267,6 @@ function DayPhotoUploader({
   const [sizeInfo, setSizeInfo] = useState<{ original: number; compressed: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [pickedName, setPickedName] = useState<string | null>(null)
-  const inputId = useId()
 
   async function handleFile(file: File) {
     if (uploading) return
@@ -338,22 +337,21 @@ function DayPhotoUploader({
       <div className="relative flex items-center gap-3 flex-wrap">
         {/* Ni display:none ni .click() por JS: Safari iOS y los navegadores
             embebidos (WhatsApp, Instagram) ignoran ese click y el botón parece
-            no hacer nada. El input queda invisible pero en el layout, activado
-            por un <label> nativo. */}
-        <input
-          id={inputId}
-          type="file"
-          accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
-          disabled={uploading}
-          className="absolute w-px h-px opacity-0 overflow-hidden -z-10"
-          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = '' }}
-        />
+            no hacer nada. Y el input va DENTRO del <label> (asociación
+            implícita, como los dropzones del onboarding) en vez de atado por
+            id + htmlFor. */}
         <label
-          htmlFor={inputId}
-          className={`inline-block px-3 py-1.5 bg-black text-white text-xs font-medium rounded transition-colors ${
+          className={`relative inline-block px-3 py-1.5 bg-black text-white text-xs font-medium rounded transition-colors ${
             uploading ? 'opacity-40 pointer-events-none' : 'cursor-pointer hover:bg-black/80'
           }`}
         >
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
+            disabled={uploading}
+            className="absolute w-px h-px opacity-0 overflow-hidden -z-10"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = '' }}
+          />
           {uploading ? 'Subiendo…' : url ? 'Cambiar foto' : 'Subir foto'}
         </label>
         {uploading && pickedName && (
