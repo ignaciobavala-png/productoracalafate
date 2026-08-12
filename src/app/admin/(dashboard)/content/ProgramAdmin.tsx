@@ -17,6 +17,7 @@ export interface ProgramItemRow {
   day_photo_url: string;
   id: string
   day_number: number
+  day_date_label: string
   day_label_es: string
   day_label_en: string
   day_subtitle_es: string
@@ -128,6 +129,19 @@ function DayGroup({
         action={updateProgramDay.bind(null, tripId, dayNumber, tripSlug)}
       >
         <p className="text-xs text-black/30 mb-3">Encabezado del día</p>
+        <div className="mb-3">
+          <label className="block text-xs text-black/40 mb-1">
+            Número grande (fecha real del viaje)
+          </label>
+          <input
+            name="day_date_label"
+            defaultValue={first.day_date_label ?? ''}
+            placeholder={`Ej. 21 o 22–24 — vacío usa ${String(dayNumber).padStart(2, '0')}`}
+            className="w-full bg-[#f7f7f7] border border-black/10 rounded px-3 py-2 text-sm focus:outline-none focus:border-black/30" />
+          <p className="text-[11px] text-black/30 mt-1">
+            Es el número que se ve gigante sobre la foto del día.
+          </p>
+        </div>
         <div className="grid grid-cols-2 gap-3 mb-3">
           <div>
             <label className="block text-xs text-black/40 mb-1">Label ES</label>

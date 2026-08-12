@@ -1,5 +1,43 @@
 # Changelog
 
+## 2026-08-12 — "Puse que incluye los vuelos y la página no cambió" + numeración del itinerario
+
+Reporte de la clienta: *"no incluye vuelos domésticos de ida y vuelta — yo puse
+que incluye y no cambió en la página"*, y sobre el itinerario: *"los números
+chiquitos (02.01, 02.02) confunden, quitarlos; y el número grande que sea el
+número de la fecha real del viaje, si no no se entiende a qué hace referencia"*.
+
+**Los vuelos — el texto estaba guardado, pero del lado equivocado**
+
+En `site_content` de `torres-del-paine-2026` el texto «Vuelos domésticos de ida
+y vuelta Santiago - Puerto Natales» estaba en `excludes_1`, o sea en la lista de
+**no incluye** (`updated_at` de ese mismo día). La página mostraba exactamente
+lo cargado: no había bug de guardado.
+
+- El texto se movió a `includes_7` (que estaba vacío) y `excludes_1` quedó vacío.
+- El panel rotulaba los campos con la clave cruda (`excludes_1`), que no dice
+  nada: ahora muestra **"SÍ incluye — ítem N"** / **"NO incluye — ítem N"**, con
+  la clave en gris al lado. Cualquier clave de semántica invertida necesita
+  etiqueta explícita o el error se repite.
+- `PricingSection` armaba las listas con un rango escrito a mano
+  (`[1,2,3,4,5,6,7]` y `[1,2,3,4]`): un `includes_8` cargado en la DB nunca se
+  hubiera renderizado, sin error ni log. Ahora las claves se derivan del
+  contenido con `^includes_\d+$` y se ordenan numéricamente por el sufijo
+  (`.sort()` alfabético pondría `includes_10` antes que `includes_2`).
+
+**Itinerario**
+
+- Se eliminó el índice `NN.MM` de cada ítem de la agenda.
+- El número grande usaba `day_number`, que es el **orden del bloque**, no el día
+  del viaje: el bloque 3 se titula "Día Cinco" y mostraba un `03`, y el bloque 2
+  agrupa "Día Dos, tres y cuatro". Nueva columna `program_items.day_date_label`
+  (migración `014`), editable por día en el panel como *"Número grande (fecha
+  real del viaje)"*; vacío cae de nuevo en `day_number` con padding.
+  Cargado para Torres del Paine (21 al 25 de septiembre): `21`, `22–24`, `25`.
+- Al ser texto libre, el tamaño gigante se capea por largo: con más de dos
+  caracteres baja de `18rem` a `10rem` (y el número fantasma de `14rem` a `8rem`),
+  si no "22–24" se sale de la pantalla.
+
 ## 2026-07-30 — La clienta no podía cambiar fotos ni los textos del programa
 
 Reporte: *"las fotos y los textos no se pueden cambiar, no se ven en el frontend las fotos que sube"*.

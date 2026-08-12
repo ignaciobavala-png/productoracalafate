@@ -14,17 +14,18 @@ export function PricingSection({ content }: { content?: SectionContent }) {
   const tc = (key: string, fallback: string) =>
     content?.[key]?.[language] ?? fallback;
 
-  const includes = content
-    ? [1, 2, 3, 4, 5, 6, 7]
-        .map((i) => content[`includes_${i}`]?.[language])
-        .filter(Boolean) as string[]
-    : pricing.includes;
+  // Se listan todas las claves `includes_N` / `excludes_N` que existan en el
+  // contenido, no un rango fijo: con [1..7] hardcodeado, un ítem nuevo cargado
+  // desde el admin nunca aparecía en la página.
+  const listOf = (prefix: string) =>
+    Object.keys(content ?? {})
+      .filter((k) => new RegExp(`^${prefix}_\\d+$`).test(k))
+      .sort((a, b) => Number(a.split("_")[1]) - Number(b.split("_")[1]))
+      .map((k) => content![k][language])
+      .filter(Boolean);
 
-  const excludes = content
-    ? [1, 2, 3, 4]
-        .map((i) => content[`excludes_${i}`]?.[language])
-        .filter(Boolean) as string[]
-    : pricing.excludes;
+  const includes = content ? listOf("includes") : pricing.includes;
+  const excludes = content ? listOf("excludes") : pricing.excludes;
 
   const price = tc("price", pricing.price);
   const currency = tc("currency", pricing.currency);

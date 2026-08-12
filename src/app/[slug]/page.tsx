@@ -39,7 +39,7 @@ export default async function TripPage({
     supabase.from("site_assets").select("key, url").eq("trip_id", trip.id),
     supabase
       .from("program_items")
-      .select("id, day_number, day_label_es, day_label_en, day_subtitle_es, day_subtitle_en, day_photo_url, title_es, title_en, description_es, description_en, sort_order")
+      .select("id, day_number, day_date_label, day_label_es, day_label_en, day_subtitle_es, day_subtitle_en, day_photo_url, title_es, title_en, description_es, description_en, sort_order")
       .eq("trip_id", trip.id)
       .order("day_number")
       .order("sort_order"),

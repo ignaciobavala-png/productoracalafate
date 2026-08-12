@@ -21,6 +21,18 @@ const SECTION_ASSETS: Record<string, string[]> = {
   manifesto: ['manifesto_photo'],
 }
 
+// Las claves crudas (includes_7, excludes_1) no dicen nada: se confundió
+// "incluye" con "no incluye" al cargar contenido. Se muestra un nombre claro.
+function humanKey(key: string): string | null {
+  const item = key.match(/^(includes|excludes)_(\d+)$/)
+  if (item) {
+    return item[1] === 'includes'
+      ? `SÍ incluye — ítem ${item[2]}`
+      : `NO incluye — ítem ${item[2]}`
+  }
+  return null
+}
+
 // Claves de galería en orden
 const GALLERY_KEYS = Array.from({ length: 8 }, (_, i) => `gallery_${i + 1}`)
 
@@ -213,7 +225,14 @@ export default async function ContentPage({
                     return (
                       <form key={row.id} action={save} className="p-4">
                         <input type="hidden" name="trip_slug" value={selectedTrip.slug} />
-                        <p className="text-xs font-mono text-black/30 mb-3">{row.key}</p>
+                        {humanKey(row.key) ? (
+                          <p className="mb-3">
+                            <span className="text-xs font-medium text-black/60">{humanKey(row.key)}</span>
+                            <span className="text-xs font-mono text-black/20 ml-2">{row.key}</span>
+                          </p>
+                        ) : (
+                          <p className="text-xs font-mono text-black/30 mb-3">{row.key}</p>
+                        )}
                         <div className={`grid gap-3 ${isLong ? 'grid-cols-1' : 'grid-cols-2'}`}>
                           <div>
                             <label className="block text-xs text-black/40 mb-1">Español</label>

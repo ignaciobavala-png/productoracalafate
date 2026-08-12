@@ -25,6 +25,7 @@ export async function updateProgramDay(tripId: string, dayNumber: number, tripSl
   await supabase
     .from('program_items')
     .update({
+      day_date_label:  (formData.get('day_date_label') as string ?? '').trim(),
       day_label_es:    (formData.get('day_label_es') as string).trim(),
       day_label_en:    (formData.get('day_label_en') as string).trim(),
       day_subtitle_es: (formData.get('day_subtitle_es') as string).trim(),

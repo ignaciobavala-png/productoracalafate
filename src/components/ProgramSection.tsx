@@ -14,6 +14,8 @@ export interface ProgramItem {
   day_subtitle_es: string;
   day_subtitle_en: string;
   day_photo_url: string;
+  /** Lo que se muestra en grande: la fecha real del viaje ("21", "22–24"). Vacío = day_number. */
+  day_date_label?: string;
   title_es: string;
   title_en: string;
   description_es: string;
@@ -37,6 +39,13 @@ const DAY_GRADIENTS = [
   "linear-gradient(135deg, #1a1206 0%, #3d2a10 100%)",
   "linear-gradient(135deg, #0a1a12 0%, #1d3a28 100%)",
 ];
+
+// El número grande del día. Por defecto es el orden del bloque (01, 02, 03),
+// pero eso confunde cuando un bloque agrupa varios días ("Día Dos, tres y
+// cuatro"): el admin puede escribir la fecha real del viaje en day_date_label.
+function dayDisplayNumber(items: ProgramItem[], dayNumber: number) {
+  return items[0]?.day_date_label?.trim() || String(dayNumber).padStart(2, "0");
+}
 
 interface ProgramSectionProps {
   content?: SectionContent;
@@ -93,7 +102,7 @@ export function ProgramSection({ content, items }: ProgramSectionProps) {
           <div key={dayNum}>
             {/* Foto cinematográfica — full bleed */}
             <DayCinematicPhoto
-              dayNumber={dayNum}
+              displayNumber={dayDisplayNumber(dayItems, dayNum)}
               photoUrl={dayItems[0].day_photo_url}
               label={language === "es" ? dayItems[0].day_label_es : dayItems[0].day_label_en}
               subtitle={language === "es" ? dayItems[0].day_subtitle_es : dayItems[0].day_subtitle_en}
@@ -104,7 +113,7 @@ export function ProgramSection({ content, items }: ProgramSectionProps) {
             <div className="px-6 md:px-12 lg:px-20 py-16 md:py-24">
               <div className="max-w-[1200px] mx-auto">
                 <DayBlock
-                  dayNumber={dayNum}
+                  displayNumber={dayDisplayNumber(dayItems, dayNum)}
                   items={dayItems}
                   language={language}
                 />
@@ -118,13 +127,13 @@ export function ProgramSection({ content, items }: ProgramSectionProps) {
 }
 
 function DayCinematicPhoto({
-  dayNumber,
+  displayNumber,
   photoUrl,
   label,
   subtitle,
   gradientFallback,
 }: {
-  dayNumber: number;
+  displayNumber: string;
   photoUrl: string;
   label: string;
   subtitle: string;
@@ -138,7 +147,11 @@ function DayCinematicPhoto({
     offset: ["start end", "end start"],
   });
   const imgY = useTransform(scrollYProgress, [0, 1], ["-8%", "8%"]);
-  const numStr = String(dayNumber).padStart(2, "0");
+  // Un rango como "22–24" no entra a 18rem: se achica según los caracteres.
+  const numSize =
+    displayNumber.length <= 2
+      ? "text-[12rem] md:text-[18rem]"
+      : "text-[6rem] md:text-[10rem]";
 
   return (
     <motion.div
@@ -177,12 +190,12 @@ function DayCinematicPhoto({
       {/* Número decorativo */}
       <motion.span
         aria-hidden="true"
-        className="absolute top-1/2 -translate-y-1/2 left-8 md:left-16 text-[12rem] md:text-[18rem] font-bold leading-none select-none pointer-events-none text-white/[0.06] tabular-nums"
+        className={`absolute top-1/2 -translate-y-1/2 left-8 md:left-16 ${numSize} font-bold leading-none select-none pointer-events-none text-white/[0.06] tabular-nums`}
         initial={{ x: -40, opacity: 0 }}
         animate={isInView ? { x: 0, opacity: 1 } : {}}
         transition={{ duration: 1.1, ease: [0.25, 0.1, 0.25, 1], delay: 0.15 }}
       >
-        {numStr}
+        {displayNumber}
       </motion.span>
 
       {/* Label */}
@@ -209,17 +222,20 @@ function DayCinematicPhoto({
 }
 
 function DayBlock({
-  dayNumber,
+  displayNumber,
   items,
   language,
 }: {
-  dayNumber: number;
+  displayNumber: string;
   items: ProgramItem[];
   language: "es" | "en";
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const railRef = useRef<HTMLDivElement>(null);
-  const numStr = String(dayNumber).padStart(2, "0");
+  const ghostSize =
+    displayNumber.length <= 2
+      ? "text-[10rem] md:text-[14rem]"
+      : "text-[5rem] md:text-[8rem]";
 
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -244,20 +260,20 @@ function DayBlock({
     <div ref={ref} className="relative">
       <motion.span
         aria-hidden="true"
-        className="absolute -top-10 -left-4 md:-left-8 text-[10rem] md:text-[14rem] font-bold leading-none select-none pointer-events-none text-black/[0.04] tabular-nums"
+        className={`absolute -top-10 -left-4 md:-left-8 ${ghostSize} font-bold leading-none select-none pointer-events-none text-black/[0.04] tabular-nums`}
         initial={{ opacity: 0, x: -30 }}
         whileInView={{ opacity: 1, x: 0 }}
         viewport={{ once: true, margin: "-100px" }}
         transition={{ duration: 1, ease: [0.25, 0.1, 0.25, 1] }}
       >
-        {numStr}
+        {displayNumber}
       </motion.span>
 
       <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-8 md:gap-20">
         <motion.div style={{ opacity: labelOpacity, x: labelX }}>
           <div className="md:sticky md:top-28">
             <span className="block text-2xl md:text-3xl font-normal tabular-nums tracking-[-0.03em] text-black/15 select-none">
-              {numStr}
+              {displayNumber}
             </span>
             <motion.div
               className="mt-3 h-px bg-primary origin-left"
@@ -317,9 +333,6 @@ function DayBlock({
                     }}
                   />
 
-                  <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-black/25 mb-2 block">
-                    {numStr}.{String(i + 1).padStart(2, "0")}
-                  </span>
                   <h4 className="text-xl md:text-2xl font-normal tracking-[-0.02em] text-black leading-snug transition-colors duration-300 group-hover:text-primary">
                     {title}
                   </h4>
