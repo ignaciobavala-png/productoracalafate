@@ -190,10 +190,16 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
       const supabase = createClient();
       const { validatedCode, tripId } = useInvitationStore.getState();
 
-      // Insertar guest primero para obtener el ID generado
-      const { data: guest, error: guestError } = await supabase
+      // El id lo genera el cliente: el rol anon puede INSERT en guests pero no
+      // SELECT, y un `.select()` encadenado hace que Postgres evalúe la policy
+      // de SELECT sobre el RETURNING y devuelva "new row violates row-level
+      // security policy". Sin `.select()` no hay RETURNING y el insert pasa.
+      const guestId = crypto.randomUUID();
+
+      const { error: guestError } = await supabase
         .from("guests")
         .insert({
+          id: guestId,
           full_name: data.fullName!,
           nationality: data.nationality || null,
           date_of_birth: data.dateOfBirth || null,
@@ -210,9 +216,7 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
           accepted_terms: data.acceptedTerms ?? false,
           invitation_code: validatedCode,
           trip_id: tripId,
-        })
-        .select("id")
-        .single();
+        });
 
       if (guestError) {
         if (guestError.code === "23505") {
@@ -220,7 +224,6 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
         }
         throw guestError;
       }
-      const guestId = guest.id;
 
       // Marcar la invitación como usada
       if (validatedCode) {
@@ -260,9 +263,13 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
 
         // Insertar acompañante si corresponde
         if (data.isComingAlone === false && data.companion?.fullName) {
-          const { data: companionRow, error: companionError } = await supabase
+          // Mismo motivo que en guests: sin `.select()`, id generado acá.
+          const companionId = crypto.randomUUID();
+
+          const { error: companionError } = await supabase
             .from("companions")
             .insert({
+              id: companionId,
               guest_id: guestId,
               full_name: data.companion.fullName,
               nationality: data.companion.nationality || null,
@@ -274,18 +281,16 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
               bio: data.companion.bio ?? "",
               dietary_restrictions: data.companion.dietaryRestrictions ?? [],
               dietary_details: data.companion.dietaryDetails ?? "",
-            })
-            .select("id")
-            .single();
+            });
 
           if (companionError) throw companionError;
 
-          if (companionRow?.id && data.companion.profilePhoto) {
+          if (data.companion.profilePhoto) {
             const companionPhoto = await toUploadable(data.companion.profilePhoto);
             const ext = companionPhoto.name.split(".").pop() ?? "jpg";
             uploads.push(
               uploadFile("guest-profile-photos", `${guestId}/companion-profile.${ext}`, companionPhoto)
-                .then((path) => updateCompanionUrl(companionRow.id, "profile_photo_url", path))
+                .then((path) => updateCompanionUrl(companionId, "profile_photo_url", path))
             );
           }
         }
