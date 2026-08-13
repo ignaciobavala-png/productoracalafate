@@ -1,7 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
-import { updateContent } from './actions'
+import { updateContent, addPricingItem } from './actions'
 import { AssetUploader } from './AssetUploader'
 import { ProgramAdmin } from './ProgramAdmin'
+import { DeleteItemButton } from './DeleteItemButton'
 
 // Orden de secciones en admin (coincide con homepage)
 const SECTION_ORDER = ['hero', 'manifesto', 'program', 'pricing', 'payment', 'footer']
@@ -23,15 +24,23 @@ const SECTION_ASSETS: Record<string, string[]> = {
 
 // Las claves crudas (includes_7, excludes_1) no dicen nada: se confundió
 // "incluye" con "no incluye" al cargar contenido. Se muestra un nombre claro.
-function humanKey(key: string): string | null {
+function humanKey(section: string, key: string): string | null {
   const item = key.match(/^(includes|excludes)_(\d+)$/)
   if (item) {
     return item[1] === 'includes'
       ? `SÍ incluye — ítem ${item[2]}`
       : `NO incluye — ítem ${item[2]}`
   }
+  if (section === 'pricing' && key === 'title') return 'Título de la lista de incluidos'
+  if (section === 'pricing' && key === 'excludesLabel') return 'Título de la lista de NO incluidos'
   return null
 }
+
+// Listas editables de la sección precio: se pueden agregar y borrar ítems.
+const PRICING_LISTS = [
+  { prefix: 'includes' as const, label: 'SÍ incluye' },
+  { prefix: 'excludes' as const, label: 'NO incluye' },
+]
 
 // Claves de galería en orden
 const GALLERY_KEYS = Array.from({ length: 8 }, (_, i) => `gallery_${i + 1}`)
@@ -225,9 +234,9 @@ export default async function ContentPage({
                     return (
                       <form key={row.id} action={save} className="p-4">
                         <input type="hidden" name="trip_slug" value={selectedTrip.slug} />
-                        {humanKey(row.key) ? (
+                        {humanKey(section, row.key) ? (
                           <p className="mb-3">
-                            <span className="text-xs font-medium text-black/60">{humanKey(row.key)}</span>
+                            <span className="text-xs font-medium text-black/60">{humanKey(section, row.key)}</span>
                             <span className="text-xs font-mono text-black/20 ml-2">{row.key}</span>
                           </p>
                         ) : (
@@ -269,15 +278,62 @@ export default async function ContentPage({
                             )}
                           </div>
                         </div>
-                        <button
-                          type="submit"
-                          className="mt-3 px-3 py-1.5 bg-black/8 text-black/70 text-xs rounded hover:bg-black/15 hover:text-black transition-colors"
-                        >
-                          Guardar
-                        </button>
+                        <div className="mt-3 flex items-center gap-1">
+                          <button
+                            type="submit"
+                            className="px-3 py-1.5 bg-black/8 text-black/70 text-xs rounded hover:bg-black/15 hover:text-black transition-colors"
+                          >
+                            Guardar
+                          </button>
+                          {/^(includes|excludes)_\d+$/.test(row.key) && (
+                            <DeleteItemButton
+                              id={row.id}
+                              tripSlug={selectedTrip.slug}
+                              label={row.value_es || humanKey(section, row.key) || row.key}
+                            />
+                          )}
+                        </div>
                       </form>
                     )
                   })}
+
+                  {/* Agregar ítems nuevos a las listas de incluidos / no incluidos */}
+                  {section === 'pricing' &&
+                    PRICING_LISTS.map(({ prefix, label }) => {
+                      const add = addPricingItem.bind(null, selectedTrip.id, selectedTrip.slug, prefix)
+
+                      return (
+                        <form key={prefix} action={add} className="p-4 bg-black/[0.015]">
+                          <p className="mb-3 text-xs font-medium text-black/60">
+                            Agregar ítem a “{label}”
+                          </p>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs text-black/40 mb-1">Español</label>
+                              <input
+                                name="value_es"
+                                placeholder="Ej: Seguro médico internacional"
+                                className="w-full bg-white border border-black/10 rounded px-3 py-2 text-sm text-black focus:outline-none focus:border-black/30"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-black/40 mb-1">English</label>
+                              <input
+                                name="value_en"
+                                placeholder="Ex: International medical insurance"
+                                className="w-full bg-white border border-black/10 rounded px-3 py-2 text-sm text-black focus:outline-none focus:border-black/30"
+                              />
+                            </div>
+                          </div>
+                          <button
+                            type="submit"
+                            className="mt-3 px-3 py-1.5 bg-black/8 text-black/70 text-xs rounded hover:bg-black/15 hover:text-black transition-colors"
+                          >
+                            + Agregar ítem
+                          </button>
+                        </form>
+                      )
+                    })}
                 </div>
               </details>
             )

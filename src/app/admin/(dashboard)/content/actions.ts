@@ -38,6 +38,56 @@ export async function updateContent(id: string, formData: FormData) {
 }
 
 /**
+ * Agrega un ítem nuevo a una lista de la sección precio (`includes_N` /
+ * `excludes_N`). El número se calcula a partir de las claves que ya existen
+ * para ese viaje, no de un contador global: cada viaje tiene su propia lista.
+ */
+export async function addPricingItem(
+  tripId: string,
+  tripSlug: string,
+  prefix: 'includes' | 'excludes',
+  formData: FormData
+) {
+  const supabase = await createClient()
+
+  const { data: existing, error: readError } = await supabase
+    .from('site_content')
+    .select('key')
+    .eq('trip_id', tripId)
+    .eq('section', 'pricing')
+    .like('key', `${prefix}_%`)
+
+  if (readError) throw new Error(`No se pudo leer la lista: ${readError.message}`)
+
+  const maxN = (existing ?? []).reduce((max, row) => {
+    const n = Number(row.key.split('_')[1])
+    return Number.isFinite(n) && n > max ? n : max
+  }, 0)
+
+  const { error } = await supabase.from('site_content').insert({
+    trip_id: tripId,
+    section: 'pricing',
+    key: `${prefix}_${maxN + 1}`,
+    value_es: (formData.get('value_es') as string) ?? '',
+    value_en: (formData.get('value_en') as string) ?? '',
+  })
+
+  if (error) throw new Error(`No se pudo agregar el ítem: ${error.message}`)
+
+  revalidate(tripSlug)
+}
+
+/** Borra un ítem de la lista de incluidos / no incluidos. */
+export async function deleteContent(id: string, tripSlug: string) {
+  const supabase = await createClient()
+
+  const { error } = await supabase.from('site_content').delete().eq('id', id)
+  if (error) throw new Error(`No se pudo borrar el ítem: ${error.message}`)
+
+  revalidate(tripSlug)
+}
+
+/**
  * Guarda la URL nueva de un asset y borra el archivo anterior del storage.
  * Corre en el server con service_role: el update no depende de la sesión del
  * browser y revalida el sitio público (el update client-side no revalidaba nada).

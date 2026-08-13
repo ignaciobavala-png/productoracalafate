@@ -75,7 +75,7 @@ export function PricingSection({ content }: { content?: SectionContent }) {
             {/* ── Incluidos ───────────────────────────────── */}
             <div>
               <span className="text-[10px] uppercase tracking-[0.25em] text-black/35 mb-5 block">
-                {language === "es" ? "Qué incluye" : "What's included"}
+                {tc("title", language === "es" ? "Qué incluye" : "What's included")}
               </span>
               <ul className="space-y-3">
                 {includes.map((item, i) => (
