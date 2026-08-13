@@ -6,7 +6,7 @@ export const onboardingText = {
     home:      { es: "Inicio",     en: "Home" },
     manifesto: { es: "Manifiesto", en: "Manifesto" },
     program:   { es: "Programa",   en: "Program" },
-    pricing:   { es: "Tarifa",     en: "Pricing" },
+    pricing:   { es: "Valor",      en: "Pricing" },
     register:  { es: "Registro",   en: "Register" },
   },
 
