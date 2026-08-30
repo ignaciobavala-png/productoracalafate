@@ -30,12 +30,12 @@ export function Footer({ content }: { content?: SectionContent }) {
           <p>
             {language === "es" ? "Diseñado por" : "Designed by"}{" "}
             <a
-              href="https://petralabs.xyz"
+              href="https://ivavala.com"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-black/50 transition-colors duration-200"
             >
-              Petra-Labs
+              ivavala
             </a>
           </p>
           <Link
