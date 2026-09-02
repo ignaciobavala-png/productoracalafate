@@ -17,9 +17,20 @@ import { resumeGuestSubmission, type GuestFormRow } from "@/app/actions/resume-g
 // { return file }` anterior se subía el original (un .HEIC de iPhone, que el
 // bucket rechaza por allowed_mime_types) y el invitado se enteraba recién al
 // final, con el alta revertida y sin saber qué archivo era el problema.
+// El bucket más chico (perfil) acepta 5 MB. Cualquier imagen que llegue acá
+// más pesada que esto se vuelve a comprimir aunque ya sea webp/jpg: mejor
+// gastar un segundo de canvas que enterarse del 413 con el formulario entero
+// completo.
+const RECOMPRESS_OVER_BYTES = 3_000_000;
+
 async function toUploadable(file: File): Promise<File> {
   if (file.type === "application/pdf" || /\.pdf$/i.test(file.name)) return file;
-  if (file.type === "image/webp") return file;
+  if (
+    (file.type === "image/webp" || file.type === "image/jpeg") &&
+    file.size <= RECOMPRESS_OVER_BYTES
+  ) {
+    return file;
+  }
   return compressImage(file);
 }
 
@@ -403,7 +414,14 @@ export const useOnboardingStore = create<OnboardingState>()(
             }
 
 
-            await Promise.all(uploads);
+            // allSettled y no all: con `all` el primer rechazo desataba el
+            // rollback mientras las otras subidas seguían en vuelo, y los
+            // archivos que registraban su path después quedaban huérfanos en el
+            // bucket para siempre. Acá se espera a que todas terminen y recién
+            // ahí se propaga el primer error.
+            const results = await Promise.allSettled(uploads);
+            const failed = results.find((r) => r.status === "rejected");
+            if (failed) throw (failed as PromiseRejectedResult).reason;
           } catch (innerErr) {
             // Algo falló después de crear el guest (ej. foto supera el límite
             // del bucket, o la app se redeployó con esta pestaña abierta).
