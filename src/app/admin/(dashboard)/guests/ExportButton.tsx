@@ -3,15 +3,16 @@
 import { useState } from "react";
 import { exportGuestsData } from "./actions";
 
+// Una fila por PERSONA, no por cuenta: es lo que necesita un manifiesto de
+// pasajeros, y es la única forma que escala ahora que una cuenta puede cargar
+// varios acompañantes (antes se exportaba `companions[0]` y el resto del grupo
+// no salía en ningún lado).
 function toCSV(rows: Awaited<ReturnType<typeof exportGuestsData>>): string {
   const headers = [
-    "ID", "Nombre", "Email", "Nacionalidad", "Fecha de nacimiento", "N° documento",
-    "Foto documento", "Teléfono",
-    "WhatsApp", "Viene solo", "Dieta", "Detalle dieta", "Bio",
+    "Grupo", "Rol", "Nombre", "Email", "Nacionalidad", "Fecha de nacimiento",
+    "N° documento", "Foto documento", "Teléfono", "WhatsApp",
+    "Dieta", "Detalle dieta", "Bio",
     "Factura", "Método de pago", "Estado", "Fecha registro", "Código invitación",
-    "Acompañante — Nombre", "Acompañante — Email", "Acompañante — Nacionalidad",
-    "Acompañante — Fecha nac.", "Acompañante — N° documento",
-    "Acompañante — Teléfono", "Acompañante — Dieta",
   ];
 
   const escape = (v: unknown): string => {
@@ -22,21 +23,36 @@ function toCSV(rows: Awaited<ReturnType<typeof exportGuestsData>>): string {
       : s;
   };
 
-  const lines = rows.map((g) => {
-    const c = Array.isArray(g.companions) ? g.companions[0] : null;
-    return [
-      g.id, g.full_name, g.email, g.nationality ?? "", g.date_of_birth ?? "",
-      g.document_number ?? "", g.id_photo_url ? "Sí" : "No",
-      g.phone ?? "", g.wants_whatsapp ? "Sí" : "No",
-      g.is_coming_alone ? "Sí" : "No",
-      g.dietary_restrictions ?? [], g.dietary_details ?? "", g.bio ?? "",
+  const lines = rows.flatMap((g) => {
+    // Los datos de la cuenta (pago, estado, código) se repiten en cada fila:
+    // así cualquier filtro sobre una persona conserva el contexto del grupo.
+    const account = [
       g.needs_invoice ? "Sí" : "No", g.payment_method_id ?? "",
       g.status, new Date(g.submitted_at).toLocaleDateString("es-CL"),
       g.invitation_code ?? "",
-      c?.full_name ?? "", c?.email ?? "", c?.nationality ?? "",
-      c?.date_of_birth ?? "", c?.document_number ?? "", c?.phone ?? "",
-      c?.dietary_restrictions ?? [],
-    ].map(escape).join(",");
+    ];
+
+    const titular = [
+      g.id, "Titular", g.full_name, g.email, g.nationality ?? "",
+      g.date_of_birth ?? "", g.document_number ?? "",
+      g.id_photo_url ? "Sí" : "No", g.phone ?? "",
+      g.wants_whatsapp ? "Sí" : "No",
+      g.dietary_restrictions ?? [], g.dietary_details ?? "", g.bio ?? "",
+      ...account,
+    ];
+
+    const companions = (Array.isArray(g.companions) ? g.companions : []).map(
+      (c, i) => [
+        g.id, `Acompañante ${i + 1}`, c.full_name, c.email ?? "",
+        c.nationality ?? "", c.date_of_birth ?? "", c.document_number ?? "",
+        c.id_photo_url ? "Sí" : "No", c.phone ?? "",
+        c.wants_whatsapp ? "Sí" : "No",
+        c.dietary_restrictions ?? [], c.dietary_details ?? "", c.bio ?? "",
+        ...account,
+      ]
+    );
+
+    return [titular, ...companions].map((row) => row.map(escape).join(","));
   });
 
   return [headers.join(","), ...lines].join("\r\n");

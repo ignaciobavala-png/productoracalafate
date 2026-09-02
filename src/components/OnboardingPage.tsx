@@ -51,7 +51,11 @@ function InvitationGate({ tripSlug, initialCode, contactEmail }: GateProps) {
     try {
       const result = await validateInvitationCode(code, tripSlug, trimmedEmail);
 
-      logInvitationRequest(code.trim().toUpperCase(), trimmedEmail);
+      // Fire-and-forget, pero con catch: sin él una promesa rechazada quedaba
+      // sin manejar y el intento se perdía del log sin dejar rastro.
+      void logInvitationRequest(code.trim().toUpperCase(), trimmedEmail).catch(
+        (e) => console.error("[logInvitationRequest]", e)
+      );
 
       if (result.valid) {
         unlock(result.code!, result.tripId!);
@@ -188,12 +192,13 @@ type ContentMap = Record<string, { es: string; en: string }>
 
 interface OnboardingPageProps {
   tripSlug: string;
+  tripId: string;
   initialCode?: string;
   paymentContent?: ContentMap;
   footerContent?: ContentMap;
 }
 
-export function OnboardingPage({ tripSlug, initialCode, paymentContent, footerContent }: OnboardingPageProps) {
+export function OnboardingPage({ tripSlug, tripId, initialCode, paymentContent, footerContent }: OnboardingPageProps) {
   const step = useOnboardingStore((s) => s.step);
   const language = useOnboardingStore((s) => s.language);
   const isSubmitted = useOnboardingStore((s) => s.isSubmitted);
@@ -201,11 +206,30 @@ export function OnboardingPage({ tripSlug, initialCode, paymentContent, footerCo
   const prevStep = useOnboardingStore((s) => s.prevStep);
   const data = useOnboardingStore((s) => s.data);
   const isUnlocked = useInvitationStore((s) => s.isUnlocked);
+  const unlockedTripId = useInvitationStore((s) => s.tripId);
   const initContent = useOnboardingStore((s) => s.initContent);
   const storedFooterContent = useOnboardingStore((s) => s.footerContent);
 
   useEffect(() => {
-    initContent(paymentContent ?? {}, footerContent ?? {});
+    let cancelled = false;
+    (async () => {
+      // Recién acá se lee el borrador de localStorage: los stores se crean con
+      // `skipHydration` para que el primer render del cliente sea idéntico al
+      // del server.
+      //
+      // El orden importa: leer PRIMERO y recién después tocar el store.
+      // Cualquier set() previo (como initContent) dispara una escritura de
+      // persist con el estado inicial vacío y pisa el borrador guardado antes
+      // de llegar a leerlo.
+      await Promise.all([
+        useInvitationStore.persist.rehydrate(),
+        useOnboardingStore.persist.rehydrate(),
+      ]);
+      if (!cancelled) initContent(paymentContent ?? {}, footerContent ?? {});
+    })();
+    return () => {
+      cancelled = true;
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -215,6 +239,11 @@ export function OnboardingPage({ tripSlug, initialCode, paymentContent, footerCo
     }
   }, [isSubmitted]);
 
+  // Acompañado sin ningún acompañante cargado no es un estado válido: si no,
+  // se puede pasar al paso 2 con la sección vacía.
+  const companions = data.companions ?? [];
+  const travelsWithCompanions = data.isComingAlone === false;
+
   const isStep1Ready = !!(
     data.fullName?.trim() &&
     data.nationality?.trim() &&
@@ -222,12 +251,15 @@ export function OnboardingPage({ tripSlug, initialCode, paymentContent, footerCo
     data.documentNumber?.trim() &&
     data.email?.trim() &&
     data.isComingAlone !== null &&
-    (data.isComingAlone !== false || (
-      data.companion?.fullName?.trim() &&
-      data.companion?.nationality?.trim() &&
-      data.companion?.dateOfBirth?.trim() &&
-      data.companion?.documentNumber?.trim() &&
-      data.companion?.email?.trim()
+    (!travelsWithCompanions || (
+      companions.length > 0 &&
+      companions.every((c) =>
+        c.fullName?.trim() &&
+        c.nationality?.trim() &&
+        c.dateOfBirth?.trim() &&
+        c.documentNumber?.trim() &&
+        c.email?.trim()
+      )
     ))
   );
 
@@ -236,10 +268,14 @@ export function OnboardingPage({ tripSlug, initialCode, paymentContent, footerCo
     data.profilePhoto &&
     data.bio?.trim() &&
     (data.dietaryRestrictions?.length ?? 0) > 0 &&
-    (data.isComingAlone !== false || (
-      data.companion?.profilePhoto &&
-      data.companion?.bio?.trim() &&
-      (data.companion?.dietaryRestrictions?.length ?? 0) > 0
+    (!travelsWithCompanions || (
+      companions.length > 0 &&
+      companions.every((c) =>
+        c.idPhoto &&
+        c.profilePhoto &&
+        c.bio?.trim() &&
+        (c.dietaryRestrictions?.length ?? 0) > 0
+      )
     ))
   );
 
@@ -253,11 +289,11 @@ export function OnboardingPage({ tripSlug, initialCode, paymentContent, footerCo
 
   const STEP_HINTS: Record<number, string> = {
     1: language === "es"
-      ? "Completa nombre, nacionalidad, fecha de nacimiento, número de documento y email para continuar."
-      : "Fill in name, nationality, date of birth, document number and email to continue.",
+      ? "Completa nombre, nacionalidad, fecha de nacimiento, número de documento y email — los tuyos y los de cada acompañante."
+      : "Fill in name, nationality, date of birth, document number and email — yours and each companion's.",
     2: language === "es"
-      ? "Sube tu foto de documento, foto de perfil, y completa tu bio."
-      : "Upload your ID photo, profile photo, and complete your bio.",
+      ? "Cada pasajero necesita foto de documento, foto de perfil, bio y restricciones alimentarias."
+      : "Every passenger needs an ID photo, profile photo, bio and dietary restrictions.",
     3: language === "es"
       ? "Selecciona un método de pago y acepta los términos."
       : "Select a payment method and accept the terms.",
@@ -266,7 +302,10 @@ export function OnboardingPage({ tripSlug, initialCode, paymentContent, footerCo
   const language2 = language === "es" ? "es" : "en";
   const contactEmail = storedFooterContent?.company_email?.[language2];
 
-  if (!isUnlocked) {
+  // El desbloqueo se persiste en localStorage, así que hay que verificar que
+  // sea de ESTE viaje: si no, el invitado entraría a otro viaje con un código
+  // ajeno y el envío iría con el trip_id equivocado.
+  if (!isUnlocked || unlockedTripId !== tripId) {
     return <InvitationGate tripSlug={tripSlug} initialCode={initialCode} contactEmail={contactEmail} />;
   }
 

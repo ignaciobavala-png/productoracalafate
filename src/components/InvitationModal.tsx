@@ -10,6 +10,7 @@ import { logInvitationRequest } from "@/app/actions/log-invitation-request";
 
 interface Props {
   tripSlug: string;
+  tripId: string;
   initialCode?: string;
   contactEmail?: string;
 }
@@ -41,7 +42,11 @@ export function InvitationModal({ tripSlug, initialCode, contactEmail }: Props) 
     try {
       const result = await validateInvitationCode(code, tripSlug, trimmedEmail);
 
-      logInvitationRequest(code.trim().toUpperCase(), trimmedEmail);
+      // Fire-and-forget, pero con catch: sin él una promesa rechazada quedaba
+      // sin manejar y el intento se perdía del log sin dejar rastro.
+      void logInvitationRequest(code.trim().toUpperCase(), trimmedEmail).catch(
+        (e) => console.error("[logInvitationRequest]", e)
+      );
 
       if (result.valid) {
         unlock(result.code!, result.tripId!);

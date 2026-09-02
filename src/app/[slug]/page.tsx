@@ -76,13 +76,14 @@ export default async function TripPage({
         <PricingSection content={contentMap.pricing} />
         <OnboardingPage
           tripSlug={slug}
+          tripId={trip.id}
           initialCode={code}
           paymentContent={contentMap.payment ?? {}}
           footerContent={contentMap.footer ?? {}}
         />
       </main>
       <Footer content={contentMap.footer} />
-      <InvitationModal tripSlug={slug} initialCode={code} contactEmail={contactEmail} />
+      <InvitationModal tripSlug={slug} tripId={trip.id} initialCode={code} contactEmail={contactEmail} />
     </>
   );
 }

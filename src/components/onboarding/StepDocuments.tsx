@@ -22,11 +22,11 @@ export function StepDocuments() {
   const toggleCompanionDietary = useOnboardingStore((s) => s.toggleCompanionDietary);
   const setIdPhoto = useOnboardingStore((s) => s.setIdPhoto);
   const setProfilePhoto = useOnboardingStore((s) => s.setProfilePhoto);
-  const setCompanionProfilePhoto = useOnboardingStore((s) => s.setCompanionProfilePhoto);
+  const setCompanionPhoto = useOnboardingStore((s) => s.setCompanionPhoto);
   const language = useOnboardingStore((s) => s.language);
 
   const dietary = data.dietaryRestrictions ?? [];
-  const companionDietary = data.companion?.dietaryRestrictions ?? [];
+  const companions = data.companions ?? [];
 
   return (
     <div className="space-y-8">
@@ -115,80 +115,107 @@ export function StepDocuments() {
         />
       </div>
 
-      {/* ── Sección acompañante ───────────────────────────────── */}
-      {data.isComingAlone === false && (
-        <div className="pt-8 border-t border-hairline space-y-8">
+      {/* ── Sección acompañantes ──────────────────────────────── */}
+      {data.isComingAlone === false && companions.length > 0 && (
+        <div className="pt-8 border-t border-hairline space-y-10">
           <p className="text-sm font-semibold text-black">
             {t("stepDocuments.companionSection", language)}
           </p>
 
-          <div>
-            <legend className="text-sm font-semibold text-black mb-4">
-              {t("stepDocuments.companionDietaryTitle", language)}
-            </legend>
-            <div className="flex flex-wrap gap-2 mb-4">
-              {DIETARY_OPTIONS.map((key) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => toggleCompanionDietary(t(`stepDocuments.${key}`, "es"))}
-                  disabled={key === "dietaryNone" ? false : companionDietary.includes(t("stepDocuments.dietaryNone", "es"))}
-                  className={`px-4 py-2 text-sm border cursor-pointer transition-colors duration-300 ${
-                    companionDietary.includes(t(`stepDocuments.${key}`, "es"))
-                      ? "border-ink bg-ink text-canvas"
-                      : key === "dietaryNone"
-                        ? "border-hairline text-black hover:border-ink/40"
-                        : companionDietary.includes(t("stepDocuments.dietaryNone", "es"))
-                          ? "border-hairline text-black cursor-not-allowed"
-                          : "border-hairline text-black hover:border-ink/40"
-                  }`}
-                >
-                  {t(`stepDocuments.${key}`, language)}
-                </button>
-              ))}
-            </div>
-            <label className="block">
-              <span className="block text-xs uppercase tracking-[0.15em] text-black mb-2">
-                {t("stepDocuments.dietaryDetailLabel", language)}
-              </span>
-              <textarea
-                value={data.companion?.dietaryDetails ?? ""}
-                onChange={(e) => updateCompanionField("dietaryDetails", e.target.value)}
-                placeholder={t("stepDocuments.dietaryDetailPlaceholder", language)}
-                rows={3}
-                className="w-full px-4 py-3 bg-canvas border border-hairline text-black text-sm placeholder:text-black/30 focus:ring-0 focus:border-2 focus:border-primary transition-colors duration-200 resize-none"
-              />
-            </label>
-          </div>
+          {companions.map((companion, index) => {
+            const companionDietary = companion.dietaryRestrictions ?? [];
+            return (
+              <div key={index} className="space-y-8">
+                <p className="text-xs uppercase tracking-[0.15em] text-black/50">
+                  {t("stepDocuments.companionHeading", language)} {index + 1}
+                  {companion.fullName.trim() && ` — ${companion.fullName.trim()}`}
+                </p>
 
-          <div>
-            <label className="block text-xs uppercase tracking-[0.15em] text-black mb-2">
-              {t("stepDocuments.companionProfilePhotoLabel", language)}
-              <span className="text-primary ml-1">*</span>
-            </label>
-            <p className="text-[11px] text-black/50 mb-3">
-              {t("stepDocuments.profilePhotoHint", language)}
-            </p>
-            <FileDropzone
-              file={data.companion?.profilePhoto ?? null}
-              onChange={setCompanionProfilePhoto}
-              language={language}
-            />
-          </div>
+                <div>
+                  <legend className="text-sm font-semibold text-black mb-4">
+                    {t("stepDocuments.companionDietaryTitle", language)}
+                  </legend>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {DIETARY_OPTIONS.map((key) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => toggleCompanionDietary(index, t(`stepDocuments.${key}`, "es"))}
+                        disabled={key === "dietaryNone" ? false : companionDietary.includes(t("stepDocuments.dietaryNone", "es"))}
+                        className={`px-4 py-2 text-sm border cursor-pointer transition-colors duration-300 ${
+                          companionDietary.includes(t(`stepDocuments.${key}`, "es"))
+                            ? "border-ink bg-ink text-canvas"
+                            : key === "dietaryNone"
+                              ? "border-hairline text-black hover:border-ink/40"
+                              : companionDietary.includes(t("stepDocuments.dietaryNone", "es"))
+                                ? "border-hairline text-black cursor-not-allowed"
+                                : "border-hairline text-black hover:border-ink/40"
+                        }`}
+                      >
+                        {t(`stepDocuments.${key}`, language)}
+                      </button>
+                    ))}
+                  </div>
+                  <label className="block">
+                    <span className="block text-xs uppercase tracking-[0.15em] text-black mb-2">
+                      {t("stepDocuments.dietaryDetailLabel", language)}
+                    </span>
+                    <textarea
+                      value={companion.dietaryDetails ?? ""}
+                      onChange={(e) => updateCompanionField(index, "dietaryDetails", e.target.value)}
+                      placeholder={t("stepDocuments.dietaryDetailPlaceholder", language)}
+                      rows={3}
+                      className="w-full px-4 py-3 bg-canvas border border-hairline text-black text-sm placeholder:text-black/30 focus:ring-0 focus:border-2 focus:border-primary transition-colors duration-200 resize-none"
+                    />
+                  </label>
+                </div>
 
-          <div>
-            <label className="block text-xs uppercase tracking-[0.15em] text-black mb-2">
-              {t("stepDocuments.companionBioLabel", language)}
-              <span className="text-primary ml-1">*</span>
-            </label>
-            <textarea
-              value={data.companion?.bio ?? ""}
-              onChange={(e) => updateCompanionField("bio", e.target.value)}
-              placeholder={t("stepDocuments.companionBioPlaceholder", language)}
-              rows={8}
-              className="w-full px-4 py-3 bg-canvas border border-hairline text-black text-sm placeholder:text-black/30 focus:ring-0 focus:border-2 focus:border-primary transition-colors duration-200 resize-none"
-            />
-          </div>
+                <div>
+                  <label className="block text-xs uppercase tracking-[0.15em] text-black mb-2">
+                    {t("stepDocuments.companionIdPhotoLabel", language)}
+                    <span className="text-primary ml-1">*</span>
+                  </label>
+                  <p className="text-[11px] text-black/50 mb-3">
+                    {t("stepDocuments.idPhotoHint", language)}
+                  </p>
+                  <FileDropzone
+                    file={companion.idPhoto ?? null}
+                    onChange={(f) => setCompanionPhoto(index, "idPhoto", f)}
+                    language={language}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs uppercase tracking-[0.15em] text-black mb-2">
+                    {t("stepDocuments.companionProfilePhotoLabel", language)}
+                    <span className="text-primary ml-1">*</span>
+                  </label>
+                  <p className="text-[11px] text-black/50 mb-3">
+                    {t("stepDocuments.profilePhotoHint", language)}
+                  </p>
+                  <FileDropzone
+                    file={companion.profilePhoto ?? null}
+                    onChange={(f) => setCompanionPhoto(index, "profilePhoto", f)}
+                    language={language}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs uppercase tracking-[0.15em] text-black mb-2">
+                    {t("stepDocuments.companionBioLabel", language)}
+                    <span className="text-primary ml-1">*</span>
+                  </label>
+                  <textarea
+                    value={companion.bio ?? ""}
+                    onChange={(e) => updateCompanionField(index, "bio", e.target.value)}
+                    placeholder={t("stepDocuments.companionBioPlaceholder", language)}
+                    rows={8}
+                    className="w-full px-4 py-3 bg-canvas border border-hairline text-black text-sm placeholder:text-black/30 focus:ring-0 focus:border-2 focus:border-primary transition-colors duration-200 resize-none"
+                  />
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

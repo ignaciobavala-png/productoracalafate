@@ -41,6 +41,15 @@ export default async function GuestDetailPage({ params }: Props) {
     signed('guest-payment-proofs', guest.payment_proof_url),
   ])
 
+  // Las fotos de cada acompañante, firmadas igual que las del titular.
+  const companionPhotos = await Promise.all(
+    (companions ?? []).map(async (c) => ({
+      id: c.id as string,
+      idPhotoUrl: await signed('guest-id-photos', c.id_photo_url),
+      profilePhotoUrl: await signed('guest-profile-photos', c.profile_photo_url),
+    }))
+  )
+
   const confirmAction = updateGuestStatus.bind(null, id, 'confirmed')
   const pendingAction = updateGuestStatus.bind(null, id, 'pending')
   const rejectAction  = updateGuestStatus.bind(null, id, 'rejected')
@@ -163,18 +172,39 @@ export default async function GuestDetailPage({ params }: Props) {
           </Section>
         )}
 
-        {/* Acompañante */}
-        {companions && companions.length > 0 && companions.map(c => (
-          <Section key={c.id} title="Acompañante">
-            <Row label="Nombre"       value={c.full_name} />
-            <Row label="Email"        value={c.email} />
-            <Row label="Teléfono"     value={c.phone} />
-            <Row label="Nacionalidad" value={c.nationality} />
-            <Row label="Fecha nac."   value={c.date_of_birth} />
-            <Row label="N° documento" value={c.document_number} />
-            <Row label="WhatsApp"     value={c.wants_whatsapp ? 'Sí' : 'No'} />
-          </Section>
-        ))}
+        {/* Acompañantes */}
+        {companions && companions.length > 0 && companions.map((c, i) => {
+          const photos = companionPhotos.find(p => p.id === c.id)
+          return (
+            <Section
+              key={c.id}
+              title={companions.length > 1 ? `Acompañante ${i + 1}` : 'Acompañante'}
+            >
+              <Row label="Nombre"       value={c.full_name} />
+              <Row label="Email"        value={c.email} />
+              <Row label="Teléfono"     value={c.phone} />
+              <Row label="Nacionalidad" value={c.nationality} />
+              <Row label="Fecha nac."   value={c.date_of_birth} />
+              <Row label="N° documento" value={c.document_number} />
+              <Row label="WhatsApp"     value={c.wants_whatsapp ? 'Sí' : 'No'} />
+              <Row label="Dieta"        value={(c.dietary_restrictions ?? []).join(', ')} />
+              <Row label="Detalle dieta" value={c.dietary_details} />
+              <Row label="Bio"          value={c.bio} />
+              <div className="grid grid-cols-2 gap-4 p-4">
+                <PhotoSlot
+                  label="Documento de identidad"
+                  url={photos?.idPhotoUrl ?? null}
+                  stored={c.id_photo_url}
+                />
+                <PhotoSlot
+                  label="Foto de perfil"
+                  url={photos?.profilePhotoUrl ?? null}
+                  stored={c.profile_photo_url}
+                />
+              </div>
+            </Section>
+          )
+        })}
       </div>
     </div>
   )

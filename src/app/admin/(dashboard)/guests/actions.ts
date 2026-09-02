@@ -23,7 +23,7 @@ export async function exportGuestsData() {
       wants_whatsapp, is_coming_alone, dietary_restrictions, dietary_details,
       bio, needs_invoice, payment_method_id, accepted_terms, status,
       submitted_at, invitation_code, id_photo_url,
-      companions (full_name, email, nationality, date_of_birth, document_number, phone, dietary_restrictions)
+      companions (full_name, email, nationality, date_of_birth, document_number, phone, dietary_restrictions, dietary_details, bio, id_photo_url, wants_whatsapp)
     `)
     .order('submitted_at', { ascending: false })
 

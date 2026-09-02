@@ -36,6 +36,7 @@ export interface CompanionData {
   bio: string;
   dietaryRestrictions: string[];
   dietaryDetails: string;
+  idPhoto: File | null;
   profilePhoto: File | null;
 }
 
@@ -48,7 +49,8 @@ export interface GuestOnboardingData {
   phone: string;
   wantsWhatsApp: boolean;
   isComingAlone: boolean | null;
-  companion: CompanionData;
+  // Lista, no un objeto suelto: una cuenta puede cargar varios pasajeros.
+  companions: CompanionData[];
   dietaryRestrictions: string[];
   dietaryDetails: string;
   idPhoto: File | null;

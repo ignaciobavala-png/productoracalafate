@@ -1,15 +1,18 @@
 "use client";
 
-import { useOnboardingStore } from "@/store/onboarding-store";
+import { MAX_COMPANIONS, useOnboardingStore } from "@/store/onboarding-store";
 import { t } from "@/lib/onboarding-text";
 
 export function StepPersonal() {
   const data = useOnboardingStore((s) => s.data);
   const updateField = useOnboardingStore((s) => s.updateField);
+  const setComingAlone = useOnboardingStore((s) => s.setComingAlone);
+  const addCompanion = useOnboardingStore((s) => s.addCompanion);
+  const removeCompanion = useOnboardingStore((s) => s.removeCompanion);
   const updateCompanionField = useOnboardingStore((s) => s.updateCompanionField);
   const language = useOnboardingStore((s) => s.language);
 
-  const companion = data.companion;
+  const companions = data.companions ?? [];
   const isAlone = data.isComingAlone;
 
   return (
@@ -77,75 +80,108 @@ export function StepPersonal() {
             <RadioChip
               label={t("stepPersonal.alone", language)}
               selected={isAlone === true}
-              onClick={() => updateField("isComingAlone", true)}
+              onClick={() => setComingAlone(true)}
             />
             <RadioChip
               label={t("stepPersonal.withCompanion", language)}
               selected={isAlone === false}
-              onClick={() => updateField("isComingAlone", false)}
+              onClick={() => setComingAlone(false)}
             />
           </div>
         </div>
 
-        {isAlone === false && companion && (
-          <div className="pt-4 border-t border-hairline space-y-5">
+        {isAlone === false && (
+          <div className="pt-4 border-t border-hairline space-y-8">
             <p className="text-sm font-semibold text-black">
               {t("stepPersonal.companionSection", language)}
             </p>
 
-            <Field
-              label={t("stepPersonal.companionFullNameLabel", language)}
-              required
-              value={companion.fullName}
-              onChange={(v) => updateCompanionField("fullName", v)}
-              placeholder={t("stepPersonal.fullNamePlaceholder", language)}
-            />
+            {companions.map((companion, index) => (
+              <div key={index} className="space-y-5">
+                <div className="flex items-baseline justify-between">
+                  <p className="text-xs uppercase tracking-[0.15em] text-black/50">
+                    {t("stepPersonal.companionHeading", language)} {index + 1}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => removeCompanion(index)}
+                    className="text-[11px] text-black/50 hover:text-primary transition-colors duration-200 cursor-pointer underline"
+                  >
+                    {t("stepPersonal.companionRemove", language)}
+                  </button>
+                </div>
 
-            <Field
-              label={t("stepPersonal.companionNationalityLabel", language)}
-              required
-              value={companion.nationality}
-              onChange={(v) => updateCompanionField("nationality", v)}
-              placeholder={t("stepPersonal.nationalityPlaceholder", language)}
-            />
+                <Field
+                  label={t("stepPersonal.companionFullNameLabel", language)}
+                  required
+                  value={companion.fullName}
+                  onChange={(v) => updateCompanionField(index, "fullName", v)}
+                  placeholder={t("stepPersonal.fullNamePlaceholder", language)}
+                />
 
-            <Field
-              label={t("stepPersonal.companionDateOfBirthLabel", language)}
-              required
-              type="date"
-              value={companion.dateOfBirth}
-              onChange={(v) => updateCompanionField("dateOfBirth", v)}
-            />
+                <Field
+                  label={t("stepPersonal.companionNationalityLabel", language)}
+                  required
+                  value={companion.nationality}
+                  onChange={(v) => updateCompanionField(index, "nationality", v)}
+                  placeholder={t("stepPersonal.nationalityPlaceholder", language)}
+                />
 
-            <Field
-              label={t("stepPersonal.companionDocumentNumberLabel", language)}
-              required
-              value={companion.documentNumber}
-              onChange={(v) => updateCompanionField("documentNumber", v)}
-              placeholder={t("stepPersonal.documentNumberPlaceholder", language)}
-            />
+                <Field
+                  label={t("stepPersonal.companionDateOfBirthLabel", language)}
+                  required
+                  type="date"
+                  value={companion.dateOfBirth}
+                  onChange={(v) => updateCompanionField(index, "dateOfBirth", v)}
+                />
 
-            <Field
-              label={t("stepPersonal.companionEmailLabel", language)}
-              required
-              type="email"
-              value={companion.email}
-              onChange={(v) => updateCompanionField("email", v)}
-              placeholder={t("stepPersonal.emailPlaceholder", language)}
-            />
+                <Field
+                  label={t("stepPersonal.companionDocumentNumberLabel", language)}
+                  required
+                  value={companion.documentNumber}
+                  onChange={(v) => updateCompanionField(index, "documentNumber", v)}
+                  placeholder={t("stepPersonal.documentNumberPlaceholder", language)}
+                />
 
-            <Field
-              label={t("stepPersonal.companionPhoneLabel", language)}
-              value={companion.phone}
-              onChange={(v) => updateCompanionField("phone", v)}
-              placeholder={t("stepPersonal.phonePlaceholder", language)}
-            />
+                <Field
+                  label={t("stepPersonal.companionEmailLabel", language)}
+                  required
+                  type="email"
+                  value={companion.email}
+                  onChange={(v) => updateCompanionField(index, "email", v)}
+                  placeholder={t("stepPersonal.emailPlaceholder", language)}
+                />
 
-            <Checkbox
-              label={t("stepPersonal.companionWhatsappLabel", language)}
-              checked={companion.wantsWhatsApp}
-              onChange={(v) => updateCompanionField("wantsWhatsApp", v)}
-            />
+                <Field
+                  label={t("stepPersonal.companionPhoneLabel", language)}
+                  value={companion.phone}
+                  onChange={(v) => updateCompanionField(index, "phone", v)}
+                  placeholder={t("stepPersonal.phonePlaceholder", language)}
+                />
+
+                <Checkbox
+                  label={t("stepPersonal.companionWhatsappLabel", language)}
+                  checked={companion.wantsWhatsApp}
+                  onChange={(v) => updateCompanionField(index, "wantsWhatsApp", v)}
+                />
+              </div>
+            ))}
+
+            {companions.length < MAX_COMPANIONS ? (
+              <button
+                type="button"
+                onClick={addCompanion}
+                className="w-full py-3 border border-dashed border-hairline text-sm text-black hover:border-ink/40 transition-colors duration-200 cursor-pointer"
+              >
+                + {t("stepPersonal.companionAdd", language)}
+              </button>
+            ) : (
+              <p className="text-[11px] text-black/40">
+                {language === "es"
+                  ? `Máximo ${MAX_COMPANIONS} acompañantes por invitación.`
+                  : `Maximum ${MAX_COMPANIONS} companions per invitation.`}
+              </p>
+            )}
           </div>
         )}
       </div>

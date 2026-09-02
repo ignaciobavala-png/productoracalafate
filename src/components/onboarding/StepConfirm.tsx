@@ -18,11 +18,20 @@ export function StepConfirm() {
     try {
       await submit();
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : (language === "es" ? "Error al enviar. Intenta nuevamente." : "Submission failed. Please try again."));
+      // El envío ahora revierte lo que alcanzó a escribir, así que reintentar
+      // siempre es seguro. Se aclara que el borrador quedó guardado y se
+      // sugiere recargar: si la app se redeployó con esta pestaña abierta,
+      // recargar es lo único que la destraba.
+      const fallback =
+        language === "es"
+          ? "No pudimos enviar el formulario. Tus datos quedaron guardados en este navegador: recargá la página y volvé a intentar."
+          : "We couldn't submit the form. Your answers are saved in this browser: reload the page and try again.";
+      const detail = err instanceof Error && err.message ? err.message : null;
+      setSubmitError(detail ? `${detail} ${fallback}` : fallback);
     }
   };
 
-  const companion = data.companion;
+  const companions = data.companions ?? [];
   const paymentMethods = buildPaymentMethods(paymentContent, language);
   const methodName = paymentMethods.find((m) => m.id === data.paymentMethod)?.label ?? t("stepConfirm.emptyField", language);
 
@@ -47,22 +56,30 @@ export function StepConfirm() {
         <h3 className="text-sm font-semibold tracking-[0.05em] uppercase text-black mb-3 pb-2 border-b border-hairline">
           {t("stepConfirm.companionSection", language)}
         </h3>
-        {data.isComingAlone === false && companion ? (
-          <dl className="space-y-3">
-            <Row label={t("stepPersonal.companionFullNameLabel", language)} value={companion.fullName} />
-            <Row label={t("stepPersonal.companionNationalityLabel", language)} value={companion.nationality} />
-            <Row label={t("stepPersonal.companionDateOfBirthLabel", language)} value={companion.dateOfBirth} />
-            <Row label={t("stepPersonal.companionDocumentNumberLabel", language)} value={companion.documentNumber} />
-            <Row label={t("stepPersonal.companionEmailLabel", language)} value={companion.email} />
-            <Row label={t("stepPersonal.companionPhoneLabel", language)} value={companion.phone} />
-            <Row label={t("stepPersonal.companionWhatsappLabel", language)} value={companion.wantsWhatsApp ? t("shared.yes", language) : t("shared.no", language)} />
-            <Row
-              label={t("stepDocuments.companionDietaryTitle", language)}
-              value={(companion.dietaryRestrictions?.length ?? 0) > 0 ? companion.dietaryRestrictions!.join(", ") : t("stepConfirm.emptyField", language)}
-            />
-            <Row label={t("stepDocuments.companionProfilePhotoLabel", language)} value={companion.profilePhoto ? companion.profilePhoto.name : t("stepConfirm.emptyField", language)} />
-            <Row label={t("stepDocuments.companionBioLabel", language)} value={companion.bio} />
-          </dl>
+        {data.isComingAlone === false && companions.length > 0 ? (
+          <div className="space-y-6">
+            {companions.map((companion, index) => (
+              <dl key={index} className="space-y-3">
+                <p className="text-[11px] uppercase tracking-[0.12em] text-black/50">
+                  {t("stepConfirm.companionHeading", language)} {index + 1}
+                </p>
+                <Row label={t("stepPersonal.companionFullNameLabel", language)} value={companion.fullName} />
+                <Row label={t("stepPersonal.companionNationalityLabel", language)} value={companion.nationality} />
+                <Row label={t("stepPersonal.companionDateOfBirthLabel", language)} value={companion.dateOfBirth} />
+                <Row label={t("stepPersonal.companionDocumentNumberLabel", language)} value={companion.documentNumber} />
+                <Row label={t("stepPersonal.companionEmailLabel", language)} value={companion.email} />
+                <Row label={t("stepPersonal.companionPhoneLabel", language)} value={companion.phone} />
+                <Row label={t("stepPersonal.companionWhatsappLabel", language)} value={companion.wantsWhatsApp ? t("shared.yes", language) : t("shared.no", language)} />
+                <Row
+                  label={t("stepDocuments.companionDietaryTitle", language)}
+                  value={(companion.dietaryRestrictions?.length ?? 0) > 0 ? companion.dietaryRestrictions!.join(", ") : t("stepConfirm.emptyField", language)}
+                />
+                <Row label={t("stepDocuments.companionIdPhotoLabel", language)} value={companion.idPhoto ? companion.idPhoto.name : t("stepConfirm.emptyField", language)} />
+                <Row label={t("stepDocuments.companionProfilePhotoLabel", language)} value={companion.profilePhoto ? companion.profilePhoto.name : t("stepConfirm.emptyField", language)} />
+                <Row label={t("stepDocuments.companionBioLabel", language)} value={companion.bio} />
+              </dl>
+            ))}
+          </div>
         ) : (
           <p className="text-sm text-black/50">{t("stepConfirm.noCompanion", language)}</p>
         )}

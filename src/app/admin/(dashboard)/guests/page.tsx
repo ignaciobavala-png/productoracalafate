@@ -13,12 +13,22 @@ const STATUS_COLOR: Record<string, string> = {
   rejected:  'bg-red-100 text-red-800',
 }
 
+type PhotoPair = { id_photo_url: string | null; profile_photo_url: string | null }
+
+// El formulario exige foto de documento y foto de perfil de CADA pasajero para
+// poder enviar: si la fila llegó sin alguna, el envío murió a mitad de camino.
+// Antes esas filas eran indistinguibles de una completa esperando revisión.
+function isIncomplete(guest: PhotoPair & { companions?: PhotoPair[] | null }) {
+  const everyone = [guest, ...(guest.companions ?? [])]
+  return everyone.some(p => !p.id_photo_url || !p.profile_photo_url)
+}
+
 export default async function GuestsPage() {
   const supabase = await createClient()
 
   const { data: guests } = await supabase
     .from('guests')
-    .select('id, full_name, email, nationality, document_number, status, submitted_at, payment_method_id, is_coming_alone, payment_proof_url, id_photo_url')
+    .select('id, full_name, email, nationality, document_number, status, submitted_at, payment_method_id, is_coming_alone, payment_proof_url, id_photo_url, profile_photo_url, companions (id, id_photo_url, profile_photo_url)')
     .order('submitted_at', { ascending: false })
 
   const counts = {
@@ -26,6 +36,7 @@ export default async function GuestsPage() {
     pending:   guests?.filter(g => g.status === 'pending').length ?? 0,
     confirmed: guests?.filter(g => g.status === 'confirmed').length ?? 0,
     rejected:  guests?.filter(g => g.status === 'rejected').length ?? 0,
+    incomplete: guests?.filter(isIncomplete).length ?? 0,
   }
 
   return (
@@ -38,6 +49,9 @@ export default async function GuestsPage() {
             <span className="text-yellow-700">{counts.pending} pendientes</span>
             <span className="text-green-700">{counts.confirmed} confirmados</span>
             <span className="text-red-700">{counts.rejected} rechazados</span>
+            {counts.incomplete > 0 && (
+              <span className="text-orange-700">{counts.incomplete} incompletos</span>
+            )}
           </div>
           <ExportButton />
         </div>
@@ -58,7 +72,7 @@ export default async function GuestsPage() {
                 <th className="text-left px-4 py-3 text-black/40 font-normal">N° doc.</th>
                 <th className="text-left px-4 py-3 text-black/40 font-normal">Foto doc.</th>
                 <th className="text-left px-4 py-3 text-black/40 font-normal">Pago</th>
-                <th className="text-left px-4 py-3 text-black/40 font-normal">Acompañante</th>
+                <th className="text-left px-4 py-3 text-black/40 font-normal">Acompañantes</th>
                 <th className="text-left px-4 py-3 text-black/40 font-normal">Fecha</th>
                 <th className="text-left px-4 py-3 text-black/40 font-normal">Comprobante</th>
                 <th className="text-left px-4 py-3 text-black/40 font-normal">Estado</th>
@@ -74,6 +88,14 @@ export default async function GuestsPage() {
                     <a href={`/admin/guests/${guest.id}`} className="hover:text-black/70 transition-colors">
                       {guest.full_name}
                     </a>
+                    {isIncomplete(guest) && (
+                      <span
+                        className="ml-2 inline-block px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 text-[10px] uppercase tracking-wide align-middle"
+                        title="Le faltan fotos: el envío quedó a medias"
+                      >
+                        Incompleto
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-black/50">{guest.email}</td>
                   <td className="px-4 py-3 text-black/50">{guest.nationality ?? '—'}</td>
@@ -94,7 +116,9 @@ export default async function GuestsPage() {
                     )}
                   </td>
                   <td className="px-4 py-3 text-black/50 font-mono text-xs">{guest.payment_method_id ?? '—'}</td>
-                  <td className="px-4 py-3 text-black/50">{guest.is_coming_alone ? 'No' : 'Sí'}</td>
+                  <td className="px-4 py-3 text-black/50">
+                    {guest.companions?.length ? guest.companions.length : '—'}
+                  </td>
                   <td className="px-4 py-3 text-black/40 text-xs">
                     {new Date(guest.submitted_at).toLocaleDateString('es-CL')}
                   </td>
