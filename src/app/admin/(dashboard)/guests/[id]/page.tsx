@@ -17,6 +17,14 @@ interface Props {
   params: Promise<{ id: string }>
 }
 
+// Caja de la miniatura que se muestra en la ficha. 800px alcanza para leer un
+// documento en pantalla; el original queda a un click de distancia.
+// Van los dos lados con `contain`: pidiendo solo `width`, Storage deja el alto
+// original y devuelve la foto deformada (una de 1920x2560 salía 700x2560).
+const THUMBNAIL = { width: 800, height: 800, resize: 'contain', quality: 75 } as const
+
+type Photo = { thumb: string; full: string; isPdf: boolean } | null
+
 export default async function GuestDetailPage({ params }: Props) {
   const { id } = await params
   const supabase = await createClient()
@@ -28,27 +36,42 @@ export default async function GuestDetailPage({ params }: Props) {
 
   if (!guest) notFound()
 
-  // Signed URLs para fotos privadas (1 hora)
-  const signed = async (bucket: string, path: string | null) => {
+  // Cada foto se firma dos veces: una miniatura para mostrar en la ficha y el
+  // original para cuando se hace click. Las fotos se suben a 1920px y acá se
+  // ven en recuadros de ~350px, así que servir el original obligaba al
+  // navegador a decodificar ~20 MB de bitmap por imagen para tirar el 97% de
+  // los píxeles. Una ficha con acompañantes llegaba a 12 megapíxeles.
+  const signed = async (bucket: string, path: string | null): Promise<Photo> => {
     if (!path) return null
-    const { data } = await supabase.storage.from(bucket).createSignedUrl(path, 3600)
-    return data?.signedUrl ?? null
+    // Los PDF no se pueden transformar: van derecho, sin miniatura.
+    const isPdf = path.toLowerCase().endsWith('.pdf')
+    const [thumb, full] = await Promise.all([
+      isPdf
+        ? null
+        : supabase.storage.from(bucket).createSignedUrl(path, 3600, { transform: THUMBNAIL }),
+      supabase.storage.from(bucket).createSignedUrl(path, 3600),
+    ])
+    const fullUrl = full.data?.signedUrl
+    if (!fullUrl) return null
+    return { thumb: thumb?.data?.signedUrl ?? fullUrl, full: fullUrl, isPdf }
   }
 
-  const [idPhotoUrl, profilePhotoUrl, paymentProofUrl] = await Promise.all([
+  // Todas las firmas salen en una sola tanda —titular y acompañantes juntos—,
+  // así la ficha espera una ida y vuelta a Storage y no una por foto.
+  const [idPhoto, profilePhoto, paymentProof, companionPhotos] = await Promise.all([
     signed('guest-id-photos', guest.id_photo_url),
     signed('guest-profile-photos', guest.profile_photo_url),
     signed('guest-payment-proofs', guest.payment_proof_url),
+    Promise.all(
+      (companions ?? []).map(async (c) => {
+        const [idPhoto, profilePhoto] = await Promise.all([
+          signed('guest-id-photos', c.id_photo_url),
+          signed('guest-profile-photos', c.profile_photo_url),
+        ])
+        return { id: c.id as string, idPhoto, profilePhoto }
+      })
+    ),
   ])
-
-  // Las fotos de cada acompañante, firmadas igual que las del titular.
-  const companionPhotos = await Promise.all(
-    (companions ?? []).map(async (c) => ({
-      id: c.id as string,
-      idPhotoUrl: await signed('guest-id-photos', c.id_photo_url),
-      profilePhotoUrl: await signed('guest-profile-photos', c.profile_photo_url),
-    }))
-  )
 
   const confirmAction = updateGuestStatus.bind(null, id, 'confirmed')
   const pendingAction = updateGuestStatus.bind(null, id, 'pending')
@@ -139,24 +162,24 @@ export default async function GuestDetailPage({ params }: Props) {
           <div className="grid grid-cols-2 gap-4 p-4">
             <PhotoSlot
               label="Documento de identidad"
-              url={idPhotoUrl}
+              photo={idPhoto}
               stored={guest.id_photo_url}
             />
             <PhotoSlot
               label="Foto de perfil"
-              url={profilePhotoUrl}
+              photo={profilePhoto}
               stored={guest.profile_photo_url}
             />
           </div>
         </Section>
 
         {/* Comprobante de pago */}
-        {paymentProofUrl && (
+        {paymentProof && (
           <Section title="Comprobante de pago">
             <div className="p-4">
-              {paymentProofUrl.includes('.pdf') ? (
+              {paymentProof.isPdf ? (
                 <a
-                  href={paymentProofUrl}
+                  href={paymentProof.full}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-4 py-2 bg-black/5 text-black/70 text-sm rounded border border-black/10 hover:bg-black/10 transition-colors"
@@ -164,8 +187,9 @@ export default async function GuestDetailPage({ params }: Props) {
                   Ver PDF
                 </a>
               ) : (
-                <a href={paymentProofUrl} target="_blank" rel="noopener noreferrer">
-                  <img src={paymentProofUrl} alt="Comprobante" className="max-w-sm rounded border border-black/10 hover:opacity-80 transition-opacity" />
+                <a href={paymentProof.full} target="_blank" rel="noopener noreferrer">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={paymentProof.thumb} alt="Comprobante" className="max-w-sm rounded border border-black/10 hover:opacity-80 transition-opacity" />
                 </a>
               )}
             </div>
@@ -193,12 +217,12 @@ export default async function GuestDetailPage({ params }: Props) {
               <div className="grid grid-cols-2 gap-4 p-4">
                 <PhotoSlot
                   label="Documento de identidad"
-                  url={photos?.idPhotoUrl ?? null}
+                  photo={photos?.idPhoto ?? null}
                   stored={c.id_photo_url}
                 />
                 <PhotoSlot
                   label="Foto de perfil"
-                  url={photos?.profilePhotoUrl ?? null}
+                  photo={photos?.profilePhoto ?? null}
                   stored={c.profile_photo_url}
                 />
               </div>
@@ -223,20 +247,21 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function PhotoSlot({
   label,
-  url,
+  photo,
   stored,
 }: {
   label: string
-  url: string | null
+  photo: Photo
   stored: string | null
 }) {
   return (
     <div>
       <p className="text-xs text-black/40 mb-2">{label}</p>
-      {url ? (
-        <a href={url} target="_blank" rel="noopener noreferrer">
+      {photo ? (
+        // Se muestra la miniatura; el link abre el original a tamaño completo.
+        <a href={photo.full} target="_blank" rel="noopener noreferrer" title="Ver en tamaño original">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={url} alt={label} className="w-full rounded border border-black/10 hover:opacity-80 transition-opacity" />
+          <img src={photo.thumb} alt={label} className="w-full rounded border border-black/10 hover:opacity-80 transition-opacity" />
         </a>
       ) : (
         <div className="flex items-center justify-center h-32 rounded border border-dashed border-black/15 bg-black/[0.02] px-3 text-center">
