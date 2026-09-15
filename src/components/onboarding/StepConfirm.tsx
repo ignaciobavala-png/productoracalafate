@@ -42,8 +42,14 @@ export function StepConfirm() {
   // Los archivos no sobreviven a un refresh: no son serializables y el borrador
   // los guarda como null (ver `partialize` en el store). Como el paso también
   // se persiste, quien recarga o vuelve al otro día reaparece acá con las fotos
-  // y el comprobante vacíos — y hasta ahora el envío salía igual, sin error y
-  // con pantalla de agradecimiento. Cuatro invitados quedaron inscriptos así.
+  // y el comprobante vacíos — y el envío salía igual, sin error y con pantalla
+  // de agradecimiento. Tres invitados quedaron inscriptos así.
+  //
+  // El faltante se avisa pero NO bloquea el envío: es decisión de la
+  // organización (Andrea, 15/9/2026) que alguien pueda terminar la inscripción
+  // aunque mande el comprobante por WhatsApp. Lo que estaba roto era que el
+  // envío incompleto fuera invisible, no que fuera posible. Quien queda
+  // incompleto aparece marcado en el listado del admin.
   const missing: { label: string; step: number }[] = [];
   const falta = (es: string, en: string, step: number) =>
     missing.push({ label: language === "es" ? es : en, step });
@@ -191,7 +197,7 @@ export function StepConfirm() {
         <button
           type="button"
           onClick={handleSubmit}
-          disabled={isSubmitting || !data.acceptedTerms || missingStep !== null}
+          disabled={isSubmitting || !data.acceptedTerms}
           className="w-full py-3.5 px-6 bg-ink text-canvas text-sm uppercase tracking-[0.15em] hover:bg-ink/90 transition-colors duration-300 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3"
         >
           {isSubmitting ? (
@@ -206,6 +212,13 @@ export function StepConfirm() {
             t("stepConfirm.submitButton", language)
           )}
         </button>
+        {missingStep !== null && !isSubmitting && (
+          <p className="mt-2 text-[11px] text-black/45 text-center leading-relaxed">
+            {language === "es"
+              ? "Si lo vas a enviar por WhatsApp, podés continuar así: el equipo te lo va a pedir."
+              : "If you are sending it over WhatsApp, you can continue: the team will follow up."}
+          </p>
+        )}
       </div>
     </div>
   );

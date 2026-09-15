@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { CARD_PAYMENT_METHODS } from '@/lib/mock-data'
 import { ExportButton } from './ExportButton'
 
 const STATUS_LABEL: Record<string, string> = {
@@ -15,12 +16,43 @@ const STATUS_COLOR: Record<string, string> = {
 
 type PhotoPair = { id_photo_url: string | null; profile_photo_url: string | null }
 
-// El formulario exige foto de documento y foto de perfil de CADA pasajero para
-// poder enviar: si la fila llegó sin alguna, el envío murió a mitad de camino.
-// Antes esas filas eran indistinguibles de una completa esperando revisión.
-function isIncomplete(guest: PhotoPair & { companions?: PhotoPair[] | null }) {
-  const everyone = [guest, ...(guest.companions ?? [])]
-  return everyone.some(p => !p.id_photo_url || !p.profile_photo_url)
+type GuestFiles = PhotoPair & {
+  payment_method_id: string | null
+  payment_proof_url: string | null
+  companions?: PhotoPair[] | null
+}
+
+// El formulario avisa lo que falta pero deja enviar igual (hay quien manda el
+// comprobante por WhatsApp), así que el admin es el único lugar donde se ve
+// quién quedó debiendo qué. Antes solo miraba las fotos: una transferencia sin
+// comprobante era indistinguible de una completa esperando revisión.
+function missingItems(guest: GuestFiles): string[] {
+  const missing: string[] = []
+  if (!guest.id_photo_url) missing.push('foto de documento')
+  if (!guest.profile_photo_url) missing.push('foto de perfil')
+
+  guest.companions?.forEach((c, i) => {
+    if (!c.id_photo_url) missing.push(`documento del acompañante ${i + 1}`)
+    if (!c.profile_photo_url) missing.push(`perfil del acompañante ${i + 1}`)
+  })
+
+  // Con tarjeta el comprobante no corresponde: el link de pago lo manda el
+  // equipo después de revisar la solicitud.
+  const needsProof =
+    !!guest.payment_method_id && !CARD_PAYMENT_METHODS.includes(guest.payment_method_id)
+  if (needsProof && !guest.payment_proof_url) missing.push('comprobante')
+
+  return missing
+}
+
+// El badge vive en una celda angosta: ahí va el resumen en dos categorías y el
+// detalle completo queda en el title.
+function missingSummary(items: string[]): string {
+  const faltaComprobante = items.includes('comprobante')
+  const fotos = items.length - (faltaComprobante ? 1 : 0)
+  if (fotos > 0 && faltaComprobante) return 'faltan fotos y comprobante'
+  if (faltaComprobante) return 'falta comprobante'
+  return fotos > 1 ? 'faltan fotos' : 'falta una foto'
 }
 
 export default async function GuestsPage() {
@@ -36,7 +68,7 @@ export default async function GuestsPage() {
     pending:   guests?.filter(g => g.status === 'pending').length ?? 0,
     confirmed: guests?.filter(g => g.status === 'confirmed').length ?? 0,
     rejected:  guests?.filter(g => g.status === 'rejected').length ?? 0,
-    incomplete: guests?.filter(isIncomplete).length ?? 0,
+    incomplete: guests?.filter(g => missingItems(g).length > 0).length ?? 0,
   }
 
   return (
@@ -88,14 +120,18 @@ export default async function GuestsPage() {
                     <a href={`/admin/guests/${guest.id}`} className="hover:text-black/70 transition-colors">
                       {guest.full_name}
                     </a>
-                    {isIncomplete(guest) && (
-                      <span
-                        className="ml-2 inline-block px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 text-[10px] uppercase tracking-wide align-middle"
-                        title="Le faltan fotos: el envío quedó a medias"
-                      >
-                        Incompleto
-                      </span>
-                    )}
+                    {(() => {
+                      const missing = missingItems(guest)
+                      if (missing.length === 0) return null
+                      return (
+                        <span
+                          className="ml-2 inline-block px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 text-[10px] uppercase tracking-wide align-middle whitespace-nowrap"
+                          title={`Falta: ${missing.join(', ')}`}
+                        >
+                          {missingSummary(missing)}
+                        </span>
+                      )
+                    })()}
                   </td>
                   <td className="px-4 py-3 text-black/50">{guest.email}</td>
                   <td className="px-4 py-3 text-black/50">{guest.nationality ?? '—'}</td>
