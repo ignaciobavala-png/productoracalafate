@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useOnboardingStore } from "@/store/onboarding-store";
 import { t } from "@/lib/onboarding-text";
-import { buildPaymentMethods } from "@/lib/mock-data";
+import { buildPaymentMethods, CARD_PAYMENT_METHODS } from "@/lib/mock-data";
 
 export function StepConfirm() {
   const data = useOnboardingStore((s) => s.data);
@@ -11,6 +11,7 @@ export function StepConfirm() {
   const isSubmitting = useOnboardingStore((s) => s.isSubmitting);
   const submit = useOnboardingStore((s) => s.submit);
   const paymentContent = useOnboardingStore((s) => s.paymentContent);
+  const setStep = useOnboardingStore((s) => s.setStep);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
@@ -34,6 +35,43 @@ export function StepConfirm() {
   const companions = data.companions ?? [];
   const paymentMethods = buildPaymentMethods(paymentContent, language);
   const methodName = paymentMethods.find((m) => m.id === data.paymentMethod)?.label ?? t("stepConfirm.emptyField", language);
+
+  const needsProof =
+    !!data.paymentMethod && !CARD_PAYMENT_METHODS.includes(data.paymentMethod);
+
+  // Los archivos no sobreviven a un refresh: no son serializables y el borrador
+  // los guarda como null (ver `partialize` en el store). Como el paso también
+  // se persiste, quien recarga o vuelve al otro día reaparece acá con las fotos
+  // y el comprobante vacíos — y hasta ahora el envío salía igual, sin error y
+  // con pantalla de agradecimiento. Cuatro invitados quedaron inscriptos así.
+  const missing: { label: string; step: number }[] = [];
+  const falta = (es: string, en: string, step: number) =>
+    missing.push({ label: language === "es" ? es : en, step });
+
+  if (!data.idPhoto) falta("tu foto de documento", "your ID photo", 2);
+  if (!data.profilePhoto) falta("tu foto de perfil", "your profile photo", 2);
+  // Mismo criterio que el submit: solo cuentan los acompañantes que realmente
+  // se van a insertar. Si no, un borrador viejo con un acompañante residual
+  // bloquearía el envío por fotos de alguien que ni siquiera se muestra acá.
+  if (data.isComingAlone === false) {
+    companions.forEach((c, i) => {
+      if (!c.fullName?.trim()) return;
+      const quien = language === "es" ? `acompañante ${i + 1}` : `companion ${i + 1}`;
+      if (!c.idPhoto) falta(`foto de documento del ${quien}`, `ID photo of ${quien}`, 2);
+      if (!c.profilePhoto) falta(`foto de perfil del ${quien}`, `profile photo of ${quien}`, 2);
+    });
+  }
+  if (needsProof && !data.paymentProof) {
+    falta("el comprobante de pago", "your payment proof", 3);
+  }
+
+  const missingStep = missing.length > 0 ? Math.min(...missing.map((m) => m.step)) : null;
+
+  const proofValue = data.paymentProof
+    ? data.paymentProof.name
+    : needsProof
+      ? (language === "es" ? "Falta adjuntar" : "Missing")
+      : (language === "es" ? "No aplica" : "Not required");
 
   return (
     <div className="space-y-8">
@@ -74,8 +112,8 @@ export function StepConfirm() {
                   label={t("stepDocuments.companionDietaryTitle", language)}
                   value={(companion.dietaryRestrictions?.length ?? 0) > 0 ? companion.dietaryRestrictions!.join(", ") : t("stepConfirm.emptyField", language)}
                 />
-                <Row label={t("stepDocuments.companionIdPhotoLabel", language)} value={companion.idPhoto ? companion.idPhoto.name : t("stepConfirm.emptyField", language)} />
-                <Row label={t("stepDocuments.companionProfilePhotoLabel", language)} value={companion.profilePhoto ? companion.profilePhoto.name : t("stepConfirm.emptyField", language)} />
+                <Row label={t("stepDocuments.companionIdPhotoLabel", language)} value={companion.idPhoto?.name} missing={!companion.idPhoto} language={language} />
+                <Row label={t("stepDocuments.companionProfilePhotoLabel", language)} value={companion.profilePhoto?.name} missing={!companion.profilePhoto} language={language} />
                 <Row label={t("stepDocuments.companionBioLabel", language)} value={companion.bio} />
               </dl>
             ))}
@@ -98,8 +136,8 @@ export function StepConfirm() {
                 : t("stepConfirm.emptyField", language)
             }
           />
-          <Row label={t("stepDocuments.idPhotoLabel", language)} value={data.idPhoto ? data.idPhoto.name : t("stepConfirm.emptyField", language)} />
-          <Row label={t("stepDocuments.profilePhotoLabel", language)} value={data.profilePhoto ? data.profilePhoto.name : t("stepConfirm.emptyField", language)} />
+          <Row label={t("stepDocuments.idPhotoLabel", language)} value={data.idPhoto?.name} missing={!data.idPhoto} language={language} />
+          <Row label={t("stepDocuments.profilePhotoLabel", language)} value={data.profilePhoto?.name} missing={!data.profilePhoto} language={language} />
           <Row label={t("stepDocuments.bioLabel", language)} value={data.bio} />
         </dl>
       </div>
@@ -116,19 +154,44 @@ export function StepConfirm() {
           <Row label={t("stepConfirm.paymentMethod", language)} value={methodName} />
           <Row
             label={language === "es" ? "Comprobante" : "Payment proof"}
-            value={data.paymentProof ? data.paymentProof.name : (language === "es" ? "No aplica" : "Not required")}
+            value={proofValue}
+            missing={needsProof && !data.paymentProof}
+            language={language}
           />
         </dl>
       </div>
 
       <div className="pt-4 border-t border-hairline">
+        {missingStep !== null && (
+          <div className="mb-4 p-4 border border-primary/30 bg-primary/[0.04]">
+            <p className="text-sm text-black leading-relaxed">
+              {language === "es"
+                ? "Los archivos no quedan guardados cuando se recarga la página, así que hay que volver a elegirlos. Falta:"
+                : "Files are not kept when the page reloads, so they need to be selected again. Missing:"}
+            </p>
+            <ul className="mt-2 text-sm text-black/70 list-disc pl-5 space-y-0.5">
+              {missing.map((m, i) => (
+                <li key={i}>{m.label}</li>
+              ))}
+            </ul>
+            <button
+              type="button"
+              onClick={() => setStep(missingStep)}
+              className="mt-3 text-xs uppercase tracking-[0.12em] text-primary hover:text-black transition-colors duration-200 cursor-pointer underline underline-offset-4"
+            >
+              {language === "es"
+                ? `Volver al paso ${missingStep} para adjuntarlos`
+                : `Go back to step ${missingStep} to attach them`}
+            </button>
+          </div>
+        )}
         {submitError && (
           <p className="text-sm text-red-500 mb-3 leading-relaxed">{submitError}</p>
         )}
         <button
           type="button"
           onClick={handleSubmit}
-          disabled={isSubmitting || !data.acceptedTerms}
+          disabled={isSubmitting || !data.acceptedTerms || missingStep !== null}
           className="w-full py-3.5 px-6 bg-ink text-canvas text-sm uppercase tracking-[0.15em] hover:bg-ink/90 transition-colors duration-300 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3"
         >
           {isSubmitting ? (
@@ -148,11 +211,25 @@ export function StepConfirm() {
   );
 }
 
-function Row({ label, value }: { label: string; value?: string }) {
+function Row({
+  label,
+  value,
+  missing,
+  language,
+}: {
+  label: string;
+  value?: string;
+  missing?: boolean;
+  language?: "es" | "en";
+}) {
   return (
     <div>
       <dt className="text-[11px] uppercase tracking-[0.12em] text-black/50 mb-0.5">{label}</dt>
-      <dd className="text-sm text-black leading-relaxed">{value || "\u2014"}</dd>
+      <dd className={`text-sm leading-relaxed ${missing ? "text-primary" : "text-black"}`}>
+        {missing
+          ? (language === "en" ? "Missing" : "Falta adjuntar")
+          : value || "\u2014"}
+      </dd>
     </div>
   );
 }
